@@ -1,45 +1,6 @@
-import { cx } from '../../../components/ui/cx'
 import type { OperationDay } from '../hooks/useOperationDay'
+import { DashboardViewToggle } from './DashboardViewToggle'
 import { OperationDatePicker } from './OperationDatePicker'
-
-const VISTAS = ['Monitor Diario', 'Análisis Mensual'] as const
-
-function VistaSegmentada() {
-  return (
-    <div
-      role="tablist"
-      aria-label="Vista del dashboard"
-      className="flex gap-[2px] rounded-[9px] border border-border bg-bg p-[3px]"
-    >
-      {VISTAS.map((vista, index) => {
-        const activa = index === 0
-        return (
-          <button
-            key={vista}
-            role="tab"
-            type="button"
-            aria-selected={activa}
-            tabIndex={activa ? 0 : -1}
-            className={cx(
-              'inline-flex items-center gap-[6px] rounded-chip px-[13px] py-[7px] text-[13px]',
-              activa
-                ? 'border border-border bg-surface font-semibold text-text-primary shadow-elevation'
-                : 'border border-transparent font-medium text-text-secondary',
-            )}
-          >
-            {activa ? (
-              <span
-                aria-hidden="true"
-                className="h-[6px] w-[6px] rounded-pill bg-success"
-              />
-            ) : null}
-            {vista}
-          </button>
-        )
-      })}
-    </div>
-  )
-}
 
 /** Título de la vista, selector de vista y fecha de operación. */
 export function PageHeader({ dia }: { dia: OperationDay }) {
@@ -54,7 +15,7 @@ export function PageHeader({ dia }: { dia: OperationDay }) {
         </p>
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <VistaSegmentada />
+        <DashboardViewToggle />
         <OperationDatePicker dia={dia} />
       </div>
     </div>

@@ -1,0 +1,372 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @keyframes fx-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @keyframes fx-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+  .am-barcol{position:relative}
+  .am-tip{opacity:0;transform:translate(-50%,5px);transition:opacity .13s ease,transform .13s ease;pointer-events:none}
+  .am-barcol:hover .am-tip{opacity:1;transform:translate(-50%,0)}
+  .am-barcol:hover .am-barfill{filter:brightness(1.14)}
+  .am-scroll::-webkit-scrollbar{height:9px;width:9px}
+  .am-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:6px}
+</style>
+</helmet>
+
+<div style="background:var(--bg); color:var(--text-primary); font-family:Inter,system-ui,sans-serif; font-variant-numeric:tabular-nums; padding:24px; display:flex; flex-direction:column; gap:20px">
+
+  <!-- ===== TOP BAR ===== -->
+  <div style="display:flex; align-items:center; gap:14px; height:56px; padding:0 14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow)">
+    <div style="display:flex; align-items:center; gap:8px; padding-right:14px; border-right:1px solid var(--border-subtle); flex-shrink:0">
+      <div style="width:22px; height:22px; border-radius:6px; background:var(--brand); display:flex; align-items:center; justify-content:center; color:var(--on-brand); font-size:13px; font-weight:700">F</div>
+      <span style="font-size:15px; font-weight:700; letter-spacing:-.01em">Fibex Control</span>
+    </div>
+    <div style="display:flex; padding:3px; gap:2px; background:var(--bg); border:1px solid var(--border-subtle); border-radius:8px; flex-shrink:0">
+      <span style="padding:5px 10px; font-size:12px; font-weight:600; border-radius:6px; background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow)">Mesa de Control</span>
+      <span style="padding:5px 10px; font-size:12px; font-weight:500; border-radius:6px; color:var(--text-secondary)">Fibex Telecom</span>
+      <span style="padding:5px 10px; font-size:12px; font-weight:500; border-radius:6px; color:var(--text-secondary)">Soporte-NOC</span>
+    </div>
+    <nav style="display:flex; gap:2px; min-width:0; overflow:hidden">
+      <span style="padding:7px 10px; font-size:13px; font-weight:600; color:var(--brand); border-radius:8px; background:color-mix(in srgb, var(--brand) 12%, transparent)">Dashboard</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Registro</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Historial</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Fibex Play</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Admin</span>
+    </nav>
+    <div style="flex:1; min-width:8px"></div>
+    <div style="display:flex; align-items:center; gap:12px; flex-shrink:0">
+      <div style="width:32px; height:32px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:13px">{{ themeGlyph }}</div>
+      <div style="display:flex; align-items:center; gap:8px; padding-left:12px; border-left:1px solid var(--border-subtle)">
+        <div style="width:30px; height:30px; border-radius:50%; background:color-mix(in srgb, var(--brand) 22%, var(--surface)); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">JR</div>
+        <span style="font-size:13px; font-weight:500; color:var(--text-secondary)">Salir</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TITLE + CONTROL BAR ===== -->
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap">
+    <div style="display:flex; flex-direction:column; gap:4px">
+      <div style="font-size:24px; font-weight:700; letter-spacing:-.02em">Análisis Mensual</div>
+      <div style="font-size:13px; color:var(--text-muted)">Vista analítica y consolidada · {{ monthLong }}</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+      <div style="display:flex; padding:3px; gap:2px; background:var(--bg); border:1px solid var(--border); border-radius:9px">
+        <span style="padding:7px 13px; font-size:13px; font-weight:500; border-radius:6px; color:var(--text-secondary)">Monitor Diario</span>
+        <span style="display:inline-flex; align-items:center; gap:6px; padding:7px 13px; font-size:13px; font-weight:600; border-radius:6px; background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow)"><span style="width:6px; height:6px; border-radius:50%; background:var(--brand)"></span>Análisis Mensual</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:10px; padding:5px 5px 5px 12px; background:var(--surface); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow)">
+        <span style="font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted)">Filtro mensual</span>
+        <div style="display:flex; align-items:center; gap:7px; padding:6px 10px; background:var(--bg); border:1px solid var(--border); border-radius:7px; font-size:13px; font-weight:600; color:var(--text-primary)">
+          <span style="color:var(--text-muted)">▦</span>{{ month }}<span style="color:var(--text-muted); font-size:11px">▾</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 3 BIG KPI CARDS ===== -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(300px,1fr)); gap:16px">
+
+    <!-- Volumen Mensual -->
+    <div style="position:relative; padding:22px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--brand); border-radius:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:16px; min-height:158px">
+      <div style="display:flex; align-items:center; gap:11px">
+        <div style="width:34px; height:34px; border-radius:9px; background:color-mix(in srgb, var(--brand) 16%, var(--surface)); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:16px">▤</div>
+        <span style="font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted)">Volumen Mensual</span>
+      </div>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}"><div style="height:48px; width:60%; border-radius:8px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></div></sc-if>
+      <sc-if value="{{ notLoading }}" hint-placeholder-val="{{ true }}"><div style="font-size:52px; font-weight:700; letter-spacing:-.03em; line-height:1; color:{{ numColor }}">{{ volumen }}</div></sc-if>
+      <div style="font-size:12px; color:var(--text-muted)">{{ volumenMeta }}</div>
+    </div>
+
+    <!-- Efectividad Global -->
+    <div style="position:relative; padding:22px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--success); border-radius:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:14px; min-height:158px">
+      <div style="display:flex; align-items:center; gap:11px">
+        <div style="width:34px; height:34px; border-radius:9px; background:color-mix(in srgb, var(--success) 16%, var(--surface)); color:var(--success); display:flex; align-items:center; justify-content:center; font-size:16px">◔</div>
+        <span style="font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted)">Efectividad Global</span>
+      </div>
+      <div style="display:flex; align-items:center; gap:12px">
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}"><div style="height:48px; width:120px; border-radius:8px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></div></sc-if>
+        <sc-if value="{{ notLoading }}" hint-placeholder-val="{{ true }}"><div style="font-size:52px; font-weight:700; letter-spacing:-.03em; line-height:1; color:{{ numColor }}">{{ efectividad }}%</div></sc-if>
+        <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}"><span style="padding:5px 10px; font-size:12px; font-weight:700; color:var(--success); background:color-mix(in srgb, var(--success) 14%, var(--surface)); border:1px solid color-mix(in srgb, var(--success) 30%, transparent); border-radius:999px">{{ resueltos }} resueltos</span></sc-if>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:6px">
+        <div style="display:flex; align-items:center; justify-content:space-between; font-size:11px; font-weight:600; color:var(--text-muted)">
+          <span>Meta de equipo: {{ meta }}%</span>
+          <span style="color:{{ metaStatusColor }}">{{ metaStatus }}</span>
+        </div>
+        <div style="position:relative; height:9px; border-radius:5px; background:var(--bg); overflow:hidden">
+          <div style="height:100%; border-radius:5px; background:var(--success); width:{{ effFill }}%"></div>
+        </div>
+        <div style="position:relative; height:0">
+          <div style="position:absolute; top:-15px; left:{{ meta }}%; width:2px; height:15px; background:var(--text-secondary)"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Escalados NOC -->
+    <div style="position:relative; padding:22px; background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--danger); border-radius:14px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:16px; min-height:158px">
+      <div style="display:flex; align-items:center; gap:11px">
+        <div style="width:34px; height:34px; border-radius:9px; background:color-mix(in srgb, var(--danger) 16%, var(--surface)); color:var(--danger); display:flex; align-items:center; justify-content:center; font-size:16px">▲</div>
+        <span style="font-size:12px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted)">Escalados NOC</span>
+      </div>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}"><div style="height:48px; width:40%; border-radius:8px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></div></sc-if>
+      <sc-if value="{{ notLoading }}" hint-placeholder-val="{{ true }}"><div style="font-size:52px; font-weight:700; letter-spacing:-.03em; line-height:1; color:{{ numColor }}">{{ escalados }}</div></sc-if>
+      <div style="font-size:12px; color:var(--text-muted)">{{ escaladosMeta }}</div>
+    </div>
+  </div>
+
+  <!-- ===== STACKED BAR CHART ===== -->
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:18px 20px; border-bottom:1px solid var(--border-subtle)">
+      <div>
+        <div style="font-size:15px; font-weight:600">Gestiones por mes</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:2px">Resueltas vs. resto del volumen · últimos 4 meses</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:18px">
+        <div style="display:flex; align-items:center; gap:7px"><span style="width:11px; height:11px; border-radius:3px; background:var(--success)"></span><span style="font-size:12px; color:var(--text-secondary)">Gestiones Resueltas</span></div>
+        <div style="display:flex; align-items:center; gap:7px"><span style="width:11px; height:11px; border-radius:3px; background:var(--c2)"></span><span style="font-size:12px; color:var(--text-secondary)">Resto de Gestiones</span></div>
+      </div>
+    </div>
+
+    <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 20px 16px">
+        <div style="display:flex; gap:14px">
+          <!-- y axis -->
+          <div style="position:relative; width:38px; height:300px; flex-shrink:0">
+            <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="5">
+              <div style="position:absolute; right:0; bottom:{{ t.bottom }}px; transform:translateY(50%); font-size:11px; color:var(--text-muted)">{{ t.label }}</div>
+            </sc-for>
+          </div>
+          <!-- plot -->
+          <div style="position:relative; flex:1; height:300px">
+            <sc-for list="{{ ticks }}" as="t" hint-placeholder-count="5">
+              <div style="position:absolute; left:0; right:0; bottom:{{ t.bottom }}px; height:1px; background:var(--border-subtle)"></div>
+            </sc-for>
+            <div style="position:absolute; inset:0; display:flex; align-items:flex-end; justify-content:space-around; gap:24px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="4">
+                <div class="am-barcol" style="flex:1; max-width:96px; display:flex; flex-direction:column; align-items:center; gap:0; cursor:default">
+                  <div class="am-tip" style="position:absolute; left:50%; bottom:{{ b.tipBottom }}px; z-index:5; padding:10px 12px; background:var(--elevated); border:1px solid var(--border); border-radius:9px; box-shadow:0 8px 24px rgba(0,0,0,.35); white-space:nowrap">
+                    <div style="font-size:12px; font-weight:700; margin-bottom:6px">{{ b.name }}</div>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-secondary); margin-bottom:3px"><span style="width:9px; height:9px; border-radius:2px; background:var(--success)"></span>Resueltas <span style="margin-left:auto; font-weight:700; color:var(--text-primary); padding-left:14px">{{ b.resueltasFmt }}</span></div>
+                    <div style="display:flex; align-items:center; gap:7px; font-size:12px; color:var(--text-secondary); margin-bottom:6px"><span style="width:9px; height:9px; border-radius:2px; background:var(--c2)"></span>Resto <span style="margin-left:auto; font-weight:700; color:var(--text-primary); padding-left:14px">{{ b.restoFmt }}</span></div>
+                    <div style="display:flex; align-items:center; justify-content:space-between; gap:14px; font-size:12px; padding-top:6px; border-top:1px solid var(--border-subtle)"><span style="color:var(--text-muted)">Total · {{ b.effPct }}% efect.</span><span style="font-weight:700">{{ b.totalFmt }}</span></div>
+                  </div>
+                  <div class="am-barfill" style="width:100%; max-width:76px; border-radius:6px 6px 0 0; overflow:hidden; display:flex; flex-direction:column; transition:filter .13s ease">
+                    <div style="height:{{ b.restoPx }}px; background:var(--c2)"></div>
+                    <div style="height:{{ b.resueltasPx }}px; background:var(--success)"></div>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+        <div style="display:flex; margin-left:52px; margin-top:10px; justify-content:space-around; gap:24px">
+          <sc-for list="{{ bars }}" as="b" hint-placeholder-count="4">
+            <span style="flex:1; max-width:96px; text-align:center; font-size:12px; font-weight:600; color:var(--text-secondary)">{{ b.name }}</span>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+      <div style="min-height:300px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px; text-align:center">
+        <div style="width:46px; height:46px; border-radius:11px; border:1.5px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:20px">▥</div>
+        <div style="font-size:14px; font-weight:600">Sin datos para el mes seleccionado</div>
+        <div style="font-size:12px; color:var(--text-muted); max-width:280px; line-height:1.5">Elige un mes con gestiones registradas para ver la comparación de volumen.</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:22px 20px; display:flex; align-items:flex-end; justify-content:space-around; gap:24px; height:344px">
+        <sc-for list="{{ skelBars }}" as="s" hint-placeholder-count="4">
+          <span style="flex:1; max-width:76px; height:{{ s.h }}px; border-radius:6px 6px 0 0; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+  <!-- ===== HEATMAP ===== -->
+  <div style="background:var(--surface); border:1px solid var(--border); border-radius:14px; box-shadow:var(--shadow); overflow:hidden">
+    <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:16px; flex-wrap:wrap; padding:18px 20px; border-bottom:1px solid var(--border-subtle)">
+      <div>
+        <div style="font-size:15px; font-weight:600; display:flex; align-items:center; gap:8px">HeatMap Mensual de Incidencias</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:2px">Mapa de calor Mesa de Control · concentración de averías por zona y motivo</div>
+      </div>
+      <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap">
+        <!-- legend -->
+        <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; align-items:center; gap:8px">
+            <span style="font-size:11px; color:var(--text-muted)">menos</span>
+            <div style="width:132px; height:9px; border-radius:5px; border:1px solid var(--border-subtle); background:linear-gradient(90deg, var(--map-bg), color-mix(in srgb, var(--brand) 45%, var(--map-bg)), var(--brand))"></div>
+            <span style="font-size:11px; color:var(--text-muted)">más</span>
+          </div>
+        </sc-if>
+        <!-- search -->
+        <div style="display:flex; align-items:center; gap:7px; padding:6px 10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:180px">
+          <span style="color:var(--text-muted); font-size:13px">⌕</span>
+          <input value="{{ query }}" onInput="{{ onSearch }}" placeholder="Buscar zona…" style="flex:1; min-width:0; border:none; outline:none; background:transparent; font:inherit; font-size:12px; color:var(--text-primary)" />
+        </div>
+      </div>
+    </div>
+
+    <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}">
+      <div class="am-scroll" style="overflow:auto; max-height:472px">
+        <table style="width:100%; min-width:820px; border-collapse:separate; border-spacing:0; font-size:12px">
+          <thead>
+            <tr>
+              <th style="position:sticky; top:0; left:0; z-index:3; text-align:left; padding:11px 16px; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-secondary); background:var(--elevated); border-bottom:1px solid var(--border); border-right:1px solid var(--border-subtle)">Zona</th>
+              <sc-for list="{{ motivos }}" as="m" hint-placeholder-count="6">
+                <th style="position:sticky; top:0; z-index:2; text-align:center; padding:11px 12px; font-size:11px; font-weight:600; letter-spacing:.03em; text-transform:uppercase; color:var(--text-muted); background:var(--elevated); border-bottom:1px solid var(--border); white-space:nowrap">{{ m }}</th>
+              </sc-for>
+              <th style="position:sticky; top:0; z-index:2; text-align:center; padding:11px 14px; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-secondary); background:var(--elevated); border-bottom:1px solid var(--border); border-left:1px solid var(--border-subtle); white-space:nowrap">Total</th>
+            </tr>
+          </thead>
+          <tbody>
+            <sc-for list="{{ heatRows }}" as="row" hint-placeholder-count="14">
+              <tr>
+                <td style="position:sticky; left:0; z-index:1; padding:9px 16px; font-weight:600; color:var(--text-primary); background:var(--surface); border-bottom:1px solid var(--border-subtle); border-right:1px solid var(--border-subtle); white-space:nowrap">{{ row.name }}</td>
+                <sc-for list="{{ row.cells }}" as="c" hint-placeholder-count="6">
+                  <td style="text-align:center; padding:9px 12px; font-weight:600; color:{{ c.fg }}; background:{{ c.bg }}; border-bottom:1px solid var(--map-grid)">{{ c.v }}</td>
+                </sc-for>
+                <td style="text-align:center; padding:9px 14px; font-weight:700; color:{{ row.totalFg }}; background:{{ row.totalBg }}; border-bottom:1px solid var(--map-grid); border-left:1px solid var(--border-subtle)">{{ row.total }}</td>
+              </tr>
+            </sc-for>
+            <sc-if value="{{ noMatch }}" hint-placeholder-val="{{ false }}">
+              <tr><td colspan="8" style="padding:28px; text-align:center; font-size:13px; color:var(--text-muted)">Ninguna zona coincide con “{{ query }}”.</td></tr>
+            </sc-if>
+          </tbody>
+        </table>
+      </div>
+      <div style="display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; padding:12px 20px; border-top:1px solid var(--border-subtle); font-size:12px; color:var(--text-muted)">
+        <span>{{ zoneCountLabel }}</span>
+        <span>Total de incidencias del mes · <span style="font-weight:700; color:var(--text-secondary)">{{ grandTotal }}</span></span>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+      <div style="min-height:320px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px; text-align:center">
+        <div style="width:46px; height:46px; border-radius:11px; border:1.5px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:20px">▦</div>
+        <div style="font-size:14px; font-weight:600">Sin incidencias en el mes seleccionado</div>
+        <div style="font-size:12px; color:var(--text-muted); max-width:280px; line-height:1.5">El mapa de calor se llenará conforme se registren averías por zona y motivo.</div>
+      </div>
+    </sc-if>
+    <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:16px 20px; display:flex; flex-direction:column; gap:10px; min-height:320px">
+        <sc-for list="{{ skelRows }}" as="s" hint-placeholder-count="10">
+          <div style="display:flex; gap:10px; align-items:center">
+            <span style="width:120px; height:13px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite; flex-shrink:0"></span>
+            <span style="flex:1; height:13px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+          </div>
+        </sc-for>
+      </div>
+    </sc-if>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;$preview&quot;:{&quot;width&quot;:1200,&quot;height&quot;:1400},&quot;mode&quot;:{&quot;editor&quot;:&quot;enum&quot;,&quot;options&quot;:[&quot;data&quot;,&quot;empty&quot;,&quot;loading&quot;],&quot;default&quot;:&quot;data&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;month&quot;:{&quot;editor&quot;:&quot;text&quot;,&quot;default&quot;:&quot;Mayo 2026&quot;,&quot;tsType&quot;:&quot;string&quot;},&quot;themeGlyph&quot;:{&quot;editor&quot;:null,&quot;default&quot;:&quot;☾&quot;,&quot;tsType&quot;:&quot;string&quot;}}">
+class Component extends DCLogic {
+  state = { query: '' };
+  renderVals(){
+    const mode = this.props.mode || 'data';
+    const isData = mode==='data', isEmpty = mode==='empty', isLoading = mode==='loading';
+    const notLoading = !isLoading;
+    const fmt = n => n.toLocaleString('es-VE');
+
+    // ---- KPIs ----
+    const volumenN = 485, resueltosN = 209, escaladosN = 22, meta = 65;
+    const efectividad = Math.round(resueltosN/volumenN*100); // 43
+    const numColor = isEmpty ? 'var(--text-muted)' : 'var(--text-primary)';
+    const belowMeta = efectividad < meta;
+
+    // ---- bar chart ----
+    const yMax = 1800;
+    const chartH = 300;
+    const ticksDef = [0,450,900,1350,1800];
+    const ticks = ticksDef.map(v=>({ label: fmt(v), bottom: Math.round(v/yMax*chartH) }));
+    const barDefs = [
+      {name:'Febrero', resueltas:545,  resto:735},
+      {name:'Marzo',   resueltas:470,  resto:1150},
+      {name:'Abril',   resueltas:720,  resto:980},
+      {name:'Mayo',    resueltas:resueltosN, resto:volumenN-resueltosN},
+    ];
+    const bars = barDefs.map(b=>{
+      const total = b.resueltas + b.resto;
+      const resueltasPx = Math.round(b.resueltas/yMax*chartH);
+      const restoPx = Math.round(b.resto/yMax*chartH);
+      return {
+        name:b.name,
+        resueltasPx, restoPx,
+        resueltasFmt:fmt(b.resueltas), restoFmt:fmt(b.resto), totalFmt:fmt(total),
+        effPct: Math.round(b.resueltas/total*100),
+        tipBottom: resueltasPx + restoPx + 10,
+      };
+    });
+    const skelBars = [{h:210},{h:288},{h:300},{h:96}];
+
+    // ---- heatmap ----
+    const motivos = ['Falla LOS','Internet Lento','Sin Internet','Usuario Clave GNT','Caídas Seguidas','No Navega'];
+    const zones = ['Canaima','Caraballeda','Carayaca','Caribe','Catia La Mar','Corapal','El Trébol','La Guaira','La Soublette','Las Tunitas','Macuto','Maiquetía','Mare Abajo','Mirabal','Montesano','OLT','Pariata','Simetaca','Tanaguarena','Tunitas','Zamora'];
+    let seed = 7;
+    const rnd = ()=>{ seed = (seed*1103515245 + 12345) & 0x7fffffff; return seed/0x7fffffff; };
+    const matrix = zones.map(()=> motivos.map(()=> Math.floor(rnd()*rnd()*12) ));
+    const rowTotals = matrix.map(r=> r.reduce((a,b)=>a+b,0));
+    const maxCell = Math.max(1, ...matrix.flat());
+    const maxTotal = Math.max(1, ...rowTotals);
+    const grandTotal = rowTotals.reduce((a,b)=>a+b,0);
+    // single-hue sequential ramp over map-bg
+    const heat = (v, max) => {
+      if(v<=0) return { bg:'var(--map-bg)', fg:'var(--text-muted)' };
+      const t = v/max;
+      const pct = Math.round((0.16 + t*0.80)*100);
+      return {
+        bg:`color-mix(in srgb, var(--brand) ${pct}%, var(--map-bg))`,
+        fg: t>0.42 ? '#F4F8FF' : 'var(--text-secondary)',
+      };
+    };
+    const q = (this.state.query||'').trim().toLowerCase();
+    const allRows = zones.map((z,i)=>{
+      const tt = heat(rowTotals[i], maxTotal);
+      return {
+        name: z,
+        cells: matrix[i].map(v=>({ v, ...heat(v, maxCell) })),
+        total: rowTotals[i], totalBg: tt.bg, totalFg: tt.fg,
+      };
+    });
+    const heatRows = q ? allRows.filter(r=> r.name.toLowerCase().includes(q)) : allRows;
+    const noMatch = q && heatRows.length===0;
+    const zoneCountLabel = q ? `${heatRows.length} de ${zones.length} zonas` : `${zones.length} zonas monitoreadas`;
+
+    const skelRows = Array.from({length:10});
+
+    return {
+      isData, isEmpty, isLoading, notLoading,
+      themeGlyph: this.props.themeGlyph || '☾',
+      month: this.props.month || 'Mayo 2026',
+      monthLong: (this.props.month || 'Mayo 2026'),
+      numColor,
+      volumen: isEmpty ? '0' : fmt(volumenN),
+      volumenMeta: isEmpty ? 'sin gestiones registradas' : 'gestiones registradas en el mes',
+      efectividad: isEmpty ? 0 : efectividad,
+      resueltos: fmt(resueltosN),
+      meta, effFill: isEmpty ? 0 : efectividad,
+      metaStatus: isEmpty ? '—' : (belowMeta ? `${meta-efectividad} pts bajo meta` : `${efectividad-meta} pts sobre meta`),
+      metaStatusColor: isEmpty ? 'var(--text-muted)' : (belowMeta ? 'var(--warning)' : 'var(--success)'),
+      escalados: isEmpty ? '0' : fmt(escaladosN),
+      escaladosMeta: isEmpty ? 'sin escalados' : 'casos derivados al NOC',
+      ticks, bars, skelBars,
+      motivos, heatRows, noMatch, query: this.state.query||'',
+      zoneCountLabel, grandTotal: fmt(grandTotal), skelRows,
+      onSearch: e => this.setState({ query: e.target.value }),
+    };
+  }
+}
+</script>
+</body>
+</html>

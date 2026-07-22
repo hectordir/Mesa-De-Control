@@ -60,6 +60,21 @@ describe('rutas de la SPA', () => {
     ).toBeInTheDocument()
   })
 
+  it('/dashboard/analisis-mensual muestra el análisis mensual con sesión', async () => {
+    useAuthStore.setState(session)
+    renderAt('/dashboard/analisis-mensual')
+    expect(
+      await screen.findByRole('heading', { name: 'Análisis Mensual', level: 1 }),
+    ).toBeInTheDocument()
+  })
+
+  it('/dashboard/analisis-mensual sin sesión vuelve a la pantalla de acceso', async () => {
+    renderAt('/dashboard/analisis-mensual')
+    expect(
+      await screen.findByRole('button', { name: /Acceder al sistema/i }),
+    ).toBeInTheDocument()
+  })
+
   it('una ruta desconocida cae en la pantalla de acceso', async () => {
     renderAt('/no-existe')
     expect(

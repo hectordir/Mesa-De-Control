@@ -9,6 +9,11 @@ import {
   MonitorDiarioResumenDto,
   OperadorResumenDto,
 } from './dto/monitor-diario-resumen.dto';
+import {
+  AnalisisMensualBarDto,
+  AnalisisMensualDto,
+  AnalisisMensualHeatmapDto,
+} from './dto/analisis-mensual.dto';
 
 /** Orden fijo de la leyenda del donut: no depende de los datos del día. */
 const RESULTADOS: ResultadoGestion[] = [
@@ -22,6 +27,28 @@ const RESULTADOS: ResultadoGestion[] = [
 const TOP_AVERIAS = 5;
 const ACTIVIDAD_RECIENTE = 20;
 
+/** Columnas del heatmap del Análisis Mensual. */
+const TOP_MOTIVOS_MES = 6;
+/** Meses que se comparan en el gráfico de barras (el pedido y los 3 previos). */
+const MESES_SERIE = 4;
+/** Meta de efectividad del equipo: constante de negocio, no sale de los datos. */
+const META_EFECTIVIDAD = 65;
+
+const NOMBRE_MES = [
+  'Enero',
+  'Febrero',
+  'Marzo',
+  'Abril',
+  'Mayo',
+  'Junio',
+  'Julio',
+  'Agosto',
+  'Septiembre',
+  'Octubre',
+  'Noviembre',
+  'Diciembre',
+];
+
 /** Filas de `groupBy` tipadas mínimamente: solo se usa `_count._all`. */
 type ConteoPorResultado = {
   resultado: ResultadoGestion;
@@ -29,6 +56,8 @@ type ConteoPorResultado = {
 };
 type ConteoPorOperador = ConteoPorResultado & { operadorId: string };
 type ConteoPorMotivo = { motivo: string; _count: { _all: number } };
+type ConteoPorDia = ConteoPorResultado & { fecha: Date };
+type ConteoPorZona = ConteoPorMotivo & { ubicacion: string };
 type GestionReciente = {
   id: string;
   resultado: ResultadoGestion;
@@ -187,5 +216,140 @@ export class DashboardService {
       ubicacion: g.ubicacion,
       hora: g.createdAt.toISOString(),
     }));
+  }
+
+  /* ── Análisis Mensual ─────────────────────────────────────────────────── */
+
+  /** Mes en curso en la zona del servidor, como `YYYY-MM`. */
+  private static mesActual(): string {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+  }
+
+  /** Medianoche UTC del día 1 de `periodo` desplazado `delta` meses. */
+  private static inicioDeMes(periodo: string, delta = 0): Date {
+    const [anio, mes] = periodo.split('-').map(Number);
+    return new Date(Date.UTC(anio, mes - 1 + delta, 1));
+  }
+
+  private static periodoDe(fecha: Date): string {
+    return fecha.toISOString().slice(0, 7);
+  }
+
+  async analisisMensual(periodo?: string): Promise<AnalisisMensualDto> {
+    const mes = periodo ?? DashboardService.mesActual();
+    // Rango semiabierto: sirve igual para meses de 28, 30 o 31 días.
+    const delMes = {
+      fecha: {
+        gte: DashboardService.inicioDeMes(mes),
+        lt: DashboardService.inicioDeMes(mes, 1),
+      },
+    };
+    const deLaSerie = {
+      fecha: {
+        gte: DashboardService.inicioDeMes(mes, 1 - MESES_SERIE),
+        lt: DashboardService.inicioDeMes(mes, 1),
+      },
+    };
+
+    const [porResultado, porDia, topMotivos] = await Promise.all([
+      this.prisma.gestion.groupBy({
+        by: ['resultado'],
+        where: delMes,
+        _count: { _all: true },
+      }) as unknown as Promise<ConteoPorResultado[]>,
+      // Un conteo por día y resultado: Postgres agrega, aquí solo se suman
+      // los ~120 subtotales por mes. Nunca se traen gestiones a memoria.
+      this.prisma.gestion.groupBy({
+        by: ['fecha', 'resultado'],
+        where: deLaSerie,
+        _count: { _all: true },
+      }) as unknown as Promise<ConteoPorDia[]>,
+      this.prisma.gestion.groupBy({
+        by: ['motivo'],
+        where: delMes,
+        _count: { _all: true },
+        orderBy: [{ _count: { motivo: 'desc' } }, { motivo: 'asc' }],
+        take: TOP_MOTIVOS_MES,
+      }) as unknown as Promise<ConteoPorMotivo[]>,
+    ]);
+
+    const motivos = topMotivos.map((m) => m.motivo);
+    // La matriz solo se pide si hay columnas que llenar.
+    const porZona =
+      motivos.length === 0
+        ? []
+        : ((await this.prisma.gestion.groupBy({
+            by: ['ubicacion', 'motivo'],
+            where: { ...delMes, motivo: { in: motivos } },
+            _count: { _all: true },
+          })) as unknown as ConteoPorZona[]);
+
+    const por = DashboardService.totalPorResultado(porResultado);
+
+    return {
+      periodo: mes,
+      kpis: {
+        volumen: porResultado.reduce((suma, f) => suma + f._count._all, 0),
+        resueltos: por.get('SOLUCIONADO_MESA') ?? 0,
+        escalados: por.get('ESCALADO_NOC') ?? 0,
+        metaEfectividad: META_EFECTIVIDAD,
+      },
+      serie: DashboardService.serie(mes, porDia),
+      heatmap: DashboardService.heatmap(motivos, porZona),
+    };
+  }
+
+  private static serie(
+    mes: string,
+    filas: ConteoPorDia[],
+  ): AnalisisMensualBarDto[] {
+    const acumulado = new Map<string, { resueltas: number; resto: number }>();
+    for (const fila of filas) {
+      const clave = DashboardService.periodoDe(fila.fecha);
+      const barra = acumulado.get(clave) ?? { resueltas: 0, resto: 0 };
+      if (fila.resultado === 'SOLUCIONADO_MESA')
+        barra.resueltas += fila._count._all;
+      else barra.resto += fila._count._all;
+      acumulado.set(clave, barra);
+    }
+
+    // Los meses sin gestiones viajan en 0: el chart no cambia de tamaño.
+    return Array.from({ length: MESES_SERIE }, (_, i) => {
+      const inicio = DashboardService.inicioDeMes(mes, i + 1 - MESES_SERIE);
+      const periodo = DashboardService.periodoDe(inicio);
+      return {
+        mes: NOMBRE_MES[inicio.getUTCMonth()],
+        periodo,
+        ...(acumulado.get(periodo) ?? { resueltas: 0, resto: 0 }),
+      };
+    });
+  }
+
+  private static heatmap(
+    motivos: string[],
+    filas: ConteoPorZona[],
+  ): AnalisisMensualHeatmapDto {
+    if (motivos.length === 0) return { motivos: [], zonas: [] };
+
+    const columna = new Map(motivos.map((motivo, i) => [motivo, i]));
+    const porZona = new Map<string, number[]>();
+    for (const fila of filas) {
+      const i = columna.get(fila.motivo);
+      if (i === undefined) continue;
+      const valores =
+        porZona.get(fila.ubicacion) ??
+        new Array<number>(motivos.length).fill(0);
+      valores[i] += fila._count._all;
+      porZona.set(fila.ubicacion, valores);
+    }
+
+    return {
+      motivos,
+      // Solo zonas con incidencias, alfabéticas: el front las lista tal cual.
+      zonas: [...porZona.entries()]
+        .map(([zona, valores]) => ({ zona, valores }))
+        .sort((a, b) => a.zona.localeCompare(b.zona)),
+    };
   }
 }

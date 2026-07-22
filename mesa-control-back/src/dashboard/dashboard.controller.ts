@@ -12,6 +12,8 @@ import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { DashboardService } from './dashboard.service';
 import { MonitorDiarioQueryDto } from './dto/monitor-diario-query.dto';
 import { MonitorDiarioResumenDto } from './dto/monitor-diario-resumen.dto';
+import { AnalisisMensualQueryDto } from './dto/analisis-mensual-query.dto';
+import { AnalisisMensualDto } from './dto/analisis-mensual.dto';
 
 @ApiTags('dashboard')
 @Controller('dashboard')
@@ -37,5 +39,27 @@ export class DashboardController {
     @Query() query: MonitorDiarioQueryDto,
   ): Promise<MonitorDiarioResumenDto> {
     return this.dashboard.monitorDiario(query.fecha);
+  }
+
+  @Get('analisis-mensual')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearerAuth')
+  @ApiOperation({
+    summary:
+      'Consolidado mensual: KPIs, serie de 4 meses y heatmap zona × motivo',
+    description:
+      'Un mes sin gestiones devuelve 200 con los KPIs en 0, la serie en ceros y el heatmap vacío (estado vacío del front), nunca 404.',
+  })
+  @ApiOkResponse({ type: AnalisisMensualDto })
+  @ApiBadRequestResponse({
+    description: 'periodo con formato distinto de YYYY-MM',
+  })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido o expirado',
+  })
+  analisisMensual(
+    @Query() query: AnalisisMensualQueryDto,
+  ): Promise<AnalisisMensualDto> {
+    return this.dashboard.analisisMensual(query.periodo);
   }
 }

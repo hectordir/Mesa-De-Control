@@ -1,5 +1,6 @@
 import { createBrowserRouter, Navigate, type RouteObject } from 'react-router-dom'
 import LoginPage from '../features/auth/LoginPage'
+import AnalisisMensualPage from '../features/dashboard/AnalisisMensualPage'
 import DashboardPage from '../pages/DashboardPage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { RootRedirect } from './RootRedirect'
@@ -13,6 +14,14 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute>
         <DashboardPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/dashboard/analisis-mensual',
+    element: (
+      <ProtectedRoute>
+        <AnalisisMensualPage />
       </ProtectedRoute>
     ),
   },

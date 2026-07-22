@@ -78,3 +78,40 @@ export interface MonitorDiarioResumen {
   /** ya ordenado desc por hora */
   actividad: ActividadItem[]
 }
+
+/* ── Dashboard · Análisis Mensual (ver spec `dashboard-analisis-mensual`) ────
+   Endpoint previsto: GET /dashboard/analisis-mensual?periodo=YYYY-MM
+   TODO: aún no publicado por el back; la vista degrada a estado vacío.       */
+
+export interface AnalisisMensualKpis {
+  volumen: number
+  resueltos: number
+  escalados: number
+  /** 0–100, meta de equipo (por defecto 65). */
+  metaEfectividad: number
+}
+
+export interface AnalisisMensualBar {
+  /** Nombre del mes, p. ej. `Febrero`. */
+  mes: string
+  /** YYYY-MM */
+  periodo: string
+  resueltas: number
+  resto: number
+}
+
+export interface AnalisisMensualHeatmap {
+  /** Columnas del mapa de calor. */
+  motivos: string[]
+  /** `valores.length === motivos.length` en cada fila. */
+  zonas: { zona: string; valores: number[] }[]
+}
+
+export interface AnalisisMensualResponse {
+  /** YYYY-MM */
+  periodo: string
+  kpis: AnalisisMensualKpis
+  /** Últimos 4 meses, en orden cronológico. */
+  serie: AnalisisMensualBar[]
+  heatmap: AnalisisMensualHeatmap
+}

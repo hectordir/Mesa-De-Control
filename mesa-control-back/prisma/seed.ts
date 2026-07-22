@@ -4,12 +4,15 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../src/generated/prisma/client';
 import { construirGestionesDemo } from '../src/seed/gestiones-demo';
+import { construirGestionesMensuales } from '../src/seed/gestiones-mensuales';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL as string }),
 });
 
 const PASSWORD = 'Fibex2026!';
+/** Filas por `createMany` de la historia mensual. */
+const LOTE = 1000;
 
 /**
  * Operadores demo. `reparto` son sus gestiones por resultado, en el orden
@@ -64,8 +67,27 @@ async function main() {
     where: { fecha: new Date(`${fecha}T00:00:00.000Z`) },
   });
 
+  // Historia mensual del Análisis Mensual: 4 meses cerrados + el mes en curso
+  // hasta ayer. No toca el día de hoy, así que el Monitor Diario no cambia.
+  const mensuales = construirGestionesMensuales(
+    new Date(),
+    usuarios.filter((u) => u.email !== 'operador@fibex.com').map((u) => u.id),
+  );
+  // En lotes: un solo INSERT de miles de filas roza el límite de parámetros de Postgres.
+  let nuevasMensuales = 0;
+  for (let i = 0; i < mensuales.length; i += LOTE) {
+    const { count: nuevas } = await prisma.gestion.createMany({
+      data: mensuales.slice(i, i + LOTE),
+      skipDuplicates: true,
+    });
+    nuevasMensuales += nuevas;
+  }
+
   console.log(
     `Seed OK — ${usuarios.length} usuarios · ${count} gestiones nuevas · ${total} gestiones el ${fecha}`,
+  );
+  console.log(
+    `Seed mensual — ${mensuales.length} gestiones generadas · ${nuevasMensuales} nuevas en base`,
   );
 }
 

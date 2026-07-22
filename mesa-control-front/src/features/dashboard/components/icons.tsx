@@ -121,3 +121,30 @@ export function RadarIcon({ size = 20 }: IconProps) {
     </Svg>
   )
 }
+
+export function AlertTriangleIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg name="alert-triangle" size={size}>
+      <path d="M12 4.5 21 19.5H3L12 4.5z" />
+      <path d="M12 10v4M12 17h.01" />
+    </Svg>
+  )
+}
+
+export function GaugeIcon({ size = 16 }: IconProps) {
+  return (
+    <Svg name="gauge" size={size}>
+      <circle cx="12" cy="12" r="8" />
+      <path d="M12 12V6M12 12l4 3" />
+    </Svg>
+  )
+}
+
+export function GridIcon({ size = 20 }: IconProps) {
+  return (
+    <Svg name="grid" size={size}>
+      <rect x="3.5" y="3.5" width="17" height="17" rx="2" />
+      <path d="M9 3.5v17M15 3.5v17M3.5 9h17M3.5 15h17" />
+    </Svg>
+  )
+}

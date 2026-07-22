@@ -10,7 +10,8 @@ const DIAS = [
   'sábado',
 ] as const
 
-const MESES = [
+/** Meses en es-VE, en minúscula; los reutiliza el filtro mensual. */
+export const MESES = [
   'enero',
   'febrero',
   'marzo',

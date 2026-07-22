@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { Button } from '../../../components/ui'
 import { cx } from '../../../components/ui/cx'
 
 /** Estado de cada panel derivado de la consulta. */
@@ -33,7 +34,9 @@ export function Panel({
     >
       <div className="flex items-start justify-between gap-3 border-b border-border-subtle p-4">
         <div>
-          <h2 className="text-[14px] font-semibold text-text-primary">{titulo}</h2>
+          <h2 className="text-[14px] font-semibold text-text-primary">
+            {titulo}
+          </h2>
           <p className="mt-[2px] text-caption text-text-muted">{subtitulo}</p>
         </div>
         {accion}
@@ -87,9 +90,35 @@ export function EmptyState({
   )
 }
 
+interface ErrorStateProps {
+  /** Titular del fallo, específico de la vista. */
+  titulo: string
+  onReintentar: () => void
+}
+
+/** Aviso accesible de fallo de carga, con reintento. */
+export function ErrorState({ titulo, onReintentar }: ErrorStateProps) {
+  return (
+    <div
+      role="alert"
+      className="flex flex-col items-center gap-3 rounded-card border border-danger bg-surface p-8 text-center shadow-elevation"
+    >
+      <p className="text-[14px] font-semibold text-danger">{titulo}</p>
+      <p className="max-w-[320px] text-caption text-text-muted">
+        Revisa tu conexión con el servidor y vuelve a intentarlo.
+      </p>
+      <Button variant="secondary" onClick={onReintentar}>
+        Reintentar
+      </Button>
+    </div>
+  )
+}
+
 /** Bloque con brillo de carga; siempre decorativo. */
 export function Skeleton({ className }: { className: string }) {
-  return <span aria-hidden="true" className={cx('block fx-skeleton', className)} />
+  return (
+    <span aria-hidden="true" className={cx('block fx-skeleton', className)} />
+  )
 }
 
 /** Repite `n` veces el contenido de carga. */

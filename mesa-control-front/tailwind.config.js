@@ -56,6 +56,7 @@ export default {
         success: {
           DEFAULT: "var(--color-success)",
           soft: "var(--color-success-soft)",
+          outline: alpha("--color-success", 30),
         },
         warning: {
           DEFAULT: "var(--color-warning)",
