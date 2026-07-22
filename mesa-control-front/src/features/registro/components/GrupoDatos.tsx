@@ -2,13 +2,14 @@ import type {
   GestionFormErrors,
   GestionFormValues,
 } from '../hooks/useGestionForm'
+import type { Opcion } from '../opciones'
 import {
   DETALLE_OPCIONES,
   RESULTADO_OPCIONES,
   SOLUCION_OPCIONES,
   TIPO_OPCIONES,
 } from '../opciones'
-import { SegToggle, SelectField, TextField } from './campos'
+import { DateField, SegToggle, SelectField, TextField } from './campos'
 
 export interface GrupoProps {
   values: GestionFormValues
@@ -24,21 +25,31 @@ export function GrupoDatos({
   values,
   errors,
   setField,
-  operador,
-}: GrupoProps & { operador: string }) {
+  operadores,
+  operadoresLoading,
+}: GrupoProps & { operadores: Opcion[]; operadoresLoading: boolean }) {
   return (
     <section className="flex flex-col gap-4 rounded-card border border-border bg-surface p-6 shadow-elevation">
       <h2 className="text-h3 font-semibold text-text-primary">
         Datos de la Gestión
       </h2>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        <TextField
+        <DateField
           label="Fecha de la Gestión"
-          type="date"
           value={values.fecha}
           onChange={(v) => setField('fecha', v)}
         />
-        <TextField label="Operador" value={operador} readOnly />
+        <SelectField
+          label="Operador"
+          value={values.operadorId}
+          error={errors.operadorId}
+          disabled={operadoresLoading}
+          placeholder={
+            operadoresLoading ? 'Cargando operadores…' : 'Selecciona un operador'
+          }
+          options={operadores}
+          onChange={(v) => setField('operadorId', v)}
+        />
         <TextField
           label="Abonado / Cliente"
           value={values.abonado}

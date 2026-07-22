@@ -5,6 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { construirGestionesDemo } from '../src/seed/gestiones-demo';
 import { construirGestionesMensuales } from '../src/seed/gestiones-mensuales';
+import { sembrarOperadoresDummy } from '../src/seed/operadores-dummy';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL as string }),
@@ -50,6 +51,10 @@ async function main() {
     ),
   );
 
+  // Operadores dummy (§9.2): pueblan el select de /registro. Idempotente (upsert
+  // por email); no participan en las gestiones demo/mensuales.
+  const dummies = await sembrarOperadoresDummy(prisma, passwordHash);
+
   const fecha = hoy();
   const gestiones = construirGestionesDemo(
     fecha,
@@ -84,7 +89,7 @@ async function main() {
   }
 
   console.log(
-    `Seed OK — ${usuarios.length} usuarios · ${count} gestiones nuevas · ${total} gestiones el ${fecha}`,
+    `Seed OK — ${usuarios.length} usuarios · ${dummies.length} operadores dummy · ${count} gestiones nuevas · ${total} gestiones el ${fecha}`,
   );
   console.log(
     `Seed mensual — ${mensuales.length} gestiones generadas · ${nuevasMensuales} nuevas en base`,

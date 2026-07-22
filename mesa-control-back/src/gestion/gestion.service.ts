@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { BadRequestException, Injectable } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateGestionDto } from './dto/create-gestion.dto';
@@ -29,13 +29,21 @@ type GestionConOperador = {
 export class GestionService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async crear(
-    operadorId: string,
-    dto: CreateGestionDto,
-  ): Promise<GestionResponseDto> {
+  async crear(dto: CreateGestionDto): Promise<GestionResponseDto> {
+    // La autoría viaja en el body (§9.1): debe existir y tener rol OPERADOR.
+    const operador = await this.prisma.user.findUnique({
+      where: { id: dto.operadorId },
+      select: { id: true, role: true },
+    });
+    if (!operador || operador.role !== 'OPERADOR') {
+      throw new BadRequestException(
+        'operadorId debe referenciar un usuario con rol OPERADOR',
+      );
+    }
+
     const creada = await this.prisma.gestion.create({
       data: {
-        operadorId,
+        operadorId: dto.operadorId,
         resultado: dto.resultado,
         motivo: dto.motivo,
         // La zona del reporte se persiste en la columna `ubicacion`.

@@ -1,16 +1,35 @@
+import { useEffect, useMemo } from 'react'
 import { Button } from '../../../components/ui/Button'
 import { useAuthStore } from '../../../stores/auth.store'
 import { useCrearGestion } from '../hooks/useCrearGestion'
+import { useOperadores } from '../hooks/useOperadores'
 import { toPayload, useGestionForm } from '../hooks/useGestionForm'
+import type { Opcion } from '../opciones'
 import { GrupoClasificacion } from './GrupoClasificacion'
 import { GrupoDatos } from './GrupoDatos'
 import { GrupoUbicacion } from './GrupoUbicacion'
 
 /** `<form>` de Nueva Gestión: estado, validación cliente y envío. */
 export function GestionForm({ onGuardado }: { onGuardado: () => void }) {
-  const operador = useAuthStore((s) => s.user)?.name ?? ''
+  const sesionId = useAuthStore((s) => s.user)?.id
   const { values, errors, setField, validate, reset } = useGestionForm()
   const crear = useCrearGestion()
+  const operadoresQuery = useOperadores()
+
+  const operadores: Opcion[] = useMemo(
+    () =>
+      (operadoresQuery.data ?? []).map((o) => ({ label: o.nombre, value: o.id })),
+    [operadoresQuery.data],
+  )
+
+  // Precarga: el operador de la sesión, si figura entre las opciones cargadas.
+  useEffect(() => {
+    if (values.operadorId) return
+    if (!sesionId) return
+    if (operadores.some((o) => o.value === sesionId)) {
+      setField('operadorId', sesionId)
+    }
+  }, [operadores, sesionId, values.operadorId, setField])
 
   function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault()
@@ -34,7 +53,8 @@ export function GestionForm({ onGuardado }: { onGuardado: () => void }) {
         values={values}
         errors={errors}
         setField={setField}
-        operador={operador}
+        operadores={operadores}
+        operadoresLoading={operadoresQuery.isLoading}
       />
       <GrupoUbicacion values={values} errors={errors} setField={setField} />
       <GrupoClasificacion

@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
@@ -7,10 +7,8 @@ import {
   ApiTags,
   ApiUnauthorizedResponse,
 } from '@nestjs/swagger';
-import type { Request } from 'express';
 
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-import { PublicUserDto } from '../auth/dto/public-user.dto';
 import { CreateGestionDto } from './dto/create-gestion.dto';
 import { GestionResponseDto } from './dto/gestion-response.dto';
 import { GestionService } from './gestion.service';
@@ -26,21 +24,19 @@ export class GestionController {
   @ApiOperation({
     summary: 'Registra una nueva gestión de la mesa',
     description:
-      'El operadorId se toma del token (req.user), nunca del body. La zona se ' +
-      'persiste en la columna `ubicacion` y alimenta los dashboards del mismo día/mes.',
+      'La autoría (`operadorId`) viaja en el body y debe ser un usuario con rol ' +
+      'OPERADOR (si no, 400). La zona se persiste en la columna `ubicacion` y ' +
+      'alimenta los dashboards del mismo día/mes. Requiere JWT.',
   })
   @ApiCreatedResponse({ type: GestionResponseDto })
   @ApiBadRequestResponse({
-    description: 'Body inválido o campo obligatorio ausente',
+    description:
+      'Body inválido, campo obligatorio ausente u operadorId sin rol OPERADOR',
   })
   @ApiUnauthorizedResponse({
     description: 'Token ausente, inválido o expirado',
   })
-  crear(
-    @Req() req: Request,
-    @Body() dto: CreateGestionDto,
-  ): Promise<GestionResponseDto> {
-    const operador = req.user as PublicUserDto;
-    return this.gestion.crear(operador.id, dto);
+  crear(@Body() dto: CreateGestionDto): Promise<GestionResponseDto> {
+    return this.gestion.crear(dto);
   }
 }

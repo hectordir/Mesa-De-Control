@@ -31,8 +31,40 @@ const USER = {
   isActive: true,
 };
 
-/** Body válido mínimo para el POST. */
+/** Otro operador válido: la autoría del body puede diferir del usuario del token. */
+const OTRO_OPERADOR = {
+  id: 'op-2',
+  email: 'andrea.perez@fibex.com',
+  name: 'Andrea Pérez',
+  role: 'OPERADOR',
+  isActive: true,
+};
+
+/** No-operador: elegirlo como autoría debe rechazarse. */
+const SUPERVISOR = {
+  id: 'sup-1',
+  email: 'super@fibex.com',
+  name: 'Supervisora',
+  role: 'SUPERVISOR',
+  isActive: true,
+};
+
+const USUARIOS = [USER, OTRO_OPERADOR, SUPERVISOR];
+
+/** Resuelve por email (login/jwt) o por id (validación de operadorId). */
+const findUnique = jest.fn(
+  (args: { where: { email?: string; id?: string } }) => {
+    const { email, id } = args.where;
+    const found = USUARIOS.find((u) =>
+      email !== undefined ? u.email === email : u.id === id,
+    );
+    return Promise.resolve(found ?? null);
+  },
+);
+
+/** Body válido mínimo para el POST. `operadorId` (§9.1) es requerido. */
 const bodyValido = (over: Record<string, unknown> = {}) => ({
+  operadorId: USER.id,
   fecha: '2026-07-22',
   abonado: 'Cond. Los Robles',
   telefono: '0412 555 1234',
@@ -69,7 +101,7 @@ describe('Gestion · registro (e2e)', () => {
     })
       .overrideProvider(PrismaService)
       .useValue({
-        user: { findUnique: jest.fn().mockResolvedValue(USER) },
+        user: { findUnique },
         gestion: { create },
       })
       .compile();
@@ -103,7 +135,7 @@ describe('Gestion · registro (e2e)', () => {
       .expect(401);
   });
 
-  it('201 con body válido: persiste con el operadorId del token', async () => {
+  it('201 con body válido: persiste con el operadorId del body', async () => {
     const res = await post(bodyValido()).expect(201);
     const body = res.body as GestionBody;
 
@@ -120,8 +152,24 @@ describe('Gestion · registro (e2e)', () => {
     expect(body.coordenadas).toBe('10.6012, -66.9311');
   });
 
-  it('ignora el operadorId del body: usa el del token', async () => {
-    await post(bodyValido({ operadorId: 'hacker-999' })).expect(400);
+  it('201: la autoría es el operadorId del body, no el usuario del token', async () => {
+    const res = await post(bodyValido({ operadorId: OTRO_OPERADOR.id })).expect(
+      201,
+    );
+    const data = (
+      create.mock.calls[0] as [{ data: Record<string, unknown> }]
+    )[0].data;
+    expect(data.operadorId).toBe(OTRO_OPERADOR.id);
+    expect((res.body as GestionBody).operador.id).toBe(OTRO_OPERADOR.id);
+  });
+
+  it('400 si operadorId no existe', async () => {
+    await post(bodyValido({ operadorId: 'no-existe-999' })).expect(400);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('400 si operadorId es de un usuario que no es OPERADOR', async () => {
+    await post(bodyValido({ operadorId: SUPERVISOR.id })).expect(400);
     expect(create).not.toHaveBeenCalled();
   });
 
@@ -131,6 +179,7 @@ describe('Gestion · registro (e2e)', () => {
   });
 
   it.each([
+    'operadorId',
     'abonado',
     'telefono',
     'detalle',

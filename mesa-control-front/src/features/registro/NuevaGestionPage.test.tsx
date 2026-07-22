@@ -5,7 +5,8 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import NuevaGestionPage from './NuevaGestionPage'
 import { createGestion } from '../../lib/api/gestiones'
-import type { GestionResponse } from '../../lib/api/types'
+import { getOperadores } from '../../lib/api/operadores'
+import type { GestionResponse, OperadorOption } from '../../lib/api/types'
 import { createTestQueryClient } from '../../test/renderWithProviders'
 import { useAuthStore } from '../../stores/auth.store'
 
@@ -16,6 +17,15 @@ vi.mock('./components/MapaUbicacion', () => ({
 
 vi.mock('../../lib/api/gestiones', () => ({ createGestion: vi.fn() }))
 const createMock = vi.mocked(createGestion)
+
+vi.mock('../../lib/api/operadores', () => ({ getOperadores: vi.fn() }))
+const operadoresMock = vi.mocked(getOperadores)
+
+const OPERADORES: OperadorOption[] = [
+  { id: 'u-2', nombre: 'Andrea Pérez' },
+  { id: 'u-1', nombre: 'Jhon Rivas' },
+  { id: 'u-3', nombre: 'María Bastidas' },
+]
 
 function renderPage() {
   return render(
@@ -37,10 +47,19 @@ async function llenarObligatorios(user: ReturnType<typeof userEvent.setup>) {
   await user.type(screen.getByLabelText('Observación del SAE'), 'Cliente conforme')
 }
 
+/** Réplica de `hoy()`: fecha local por defecto del formulario. */
+function hoyISO(): string {
+  const d = new Date()
+  const mm = String(d.getMonth() + 1).padStart(2, '0')
+  const dd = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${mm}-${dd}`
+}
+
 beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
   document.documentElement.setAttribute('data-theme', 'dark')
+  operadoresMock.mockResolvedValue(OPERADORES)
   useAuthStore.setState({
     token: 'jwt-123',
     user: { id: 'u-1', email: 'jhon@fibex.com', name: 'Jhon Rivas', role: 'OPERADOR' },
@@ -48,7 +67,7 @@ beforeEach(() => {
 })
 
 describe('NuevaGestionPage', () => {
-  it('muestra los tres grupos y el operador de la sesión (solo lectura)', () => {
+  it('muestra los tres grupos y puebla el select de operador precargando la sesión', async () => {
     renderPage()
     expect(
       screen.getByRole('heading', { name: 'Nueva Gestión', level: 1 }),
@@ -57,9 +76,15 @@ describe('NuevaGestionPage', () => {
     expect(screen.getByText('Ubicación')).toBeInTheDocument()
     expect(screen.getByText('Clasificación y Cierre')).toBeInTheDocument()
 
-    const operador = screen.getByLabelText('Operador') as HTMLInputElement
-    expect(operador.value).toBe('Jhon Rivas')
-    expect(operador).toHaveAttribute('readonly')
+    const operador = screen.getByLabelText('Operador') as HTMLSelectElement
+    expect(operador.tagName).toBe('SELECT')
+    // opciones desde GET /operadores
+    await waitFor(() =>
+      expect(screen.getByRole('option', { name: 'Jhon Rivas' })).toBeInTheDocument(),
+    )
+    expect(screen.getByRole('option', { name: 'Andrea Pérez' })).toBeInTheDocument()
+    // precarga el operador de la sesión
+    await waitFor(() => expect(operador.value).toBe('u-1'))
   })
 
   it('guardar con obligatorios vacíos muestra errores y no llama a la API', async () => {
@@ -73,10 +98,15 @@ describe('NuevaGestionPage', () => {
     expect(createMock).not.toHaveBeenCalled()
   })
 
-  it('guardar con datos válidos envía el payload exacto y muestra el toast', async () => {
+  it('guardar con datos válidos envía el payload exacto (con el operadorId elegido) y muestra el toast', async () => {
     const user = userEvent.setup()
     createMock.mockResolvedValue({ id: 'g-1' } as GestionResponse)
     renderPage()
+
+    // esperar la precarga del select antes de elegir otro operador
+    const operador = screen.getByLabelText('Operador') as HTMLSelectElement
+    await waitFor(() => expect(operador.value).toBe('u-1'))
+    await user.selectOptions(operador, 'María Bastidas')
 
     await llenarObligatorios(user)
     await user.selectOptions(
@@ -85,12 +115,12 @@ describe('NuevaGestionPage', () => {
     )
     await user.selectOptions(screen.getByLabelText('Tipo de Resolución'), 'NOC')
 
-    const fecha = (screen.getByLabelText('Fecha de la Gestión') as HTMLInputElement).value
     await user.click(screen.getByRole('button', { name: /Guardar/ }))
 
     await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1))
     expect(createMock).toHaveBeenCalledWith({
-      fecha,
+      operadorId: 'u-3',
+      fecha: hoyISO(),
       abonado: 'Cond. Los Robles',
       telefono: '0412 555 1234',
       detalle: 'Sin Internet',
@@ -105,15 +135,13 @@ describe('NuevaGestionPage', () => {
     })
 
     expect(await screen.findByRole('status')).toHaveTextContent('Gestión guardada')
-    // el formulario se resetea; el operador se conserva
+    // el formulario se resetea; el operador seleccionado se conserva
     await waitFor(() =>
       expect(
         (screen.getByLabelText('Abonado / Cliente') as HTMLInputElement).value,
       ).toBe(''),
     )
-    expect(
-      (screen.getByLabelText('Operador') as HTMLInputElement).value,
-    ).toBe('Jhon Rivas')
+    expect((screen.getByLabelText('Operador') as HTMLSelectElement).value).toBe('u-3')
   })
 
   it('el botón Limpiar resetea los campos sin llamar a la API', async () => {

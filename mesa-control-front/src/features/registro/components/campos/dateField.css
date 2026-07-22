@@ -1,0 +1,58 @@
+/* Tema del calendario `react-day-picker`, atado a los tokens del sistema.
+   Se aplica sobre `.rdp-root`; el tema dark/light lo hereda de `data-theme`
+   vía las variables de `tokens.css`. Sin colores hardcodeados. */
+.rdp-root {
+  --rdp-accent-color: var(--color-brand);
+  --rdp-accent-background-color: var(--color-brand-soft, var(--color-surface));
+  --rdp-background-color: var(--color-surface-elevated);
+  --rdp-today-color: var(--color-brand);
+  --rdp-range_start-color: var(--color-on-brand);
+  --rdp-range_end-color: var(--color-on-brand);
+  --rdp-selected-border: none;
+  --rdp-day-width: 36px;
+  --rdp-day-height: 36px;
+  --rdp-day_button-width: 36px;
+  --rdp-day_button-height: 36px;
+  color: var(--color-text-primary);
+  font-size: 13px;
+}
+
+.rdp-root .rdp-caption_label,
+.rdp-root .rdp-month_caption {
+  color: var(--color-text-primary);
+  font-weight: 600;
+}
+
+.rdp-root .rdp-weekday {
+  color: var(--color-text-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.rdp-root .rdp-day_button {
+  color: var(--color-text-primary);
+  border-radius: 8px;
+}
+
+.rdp-root .rdp-day_button:hover {
+  background-color: var(--color-surface);
+}
+
+.rdp-root .rdp-selected .rdp-day_button {
+  background-color: var(--color-brand);
+  color: var(--color-on-brand);
+}
+
+.rdp-root .rdp-today:not(.rdp-selected) .rdp-day_button {
+  color: var(--color-brand);
+  font-weight: 700;
+}
+
+.rdp-root .rdp-chevron {
+  fill: var(--color-text-secondary);
+}
+
+.rdp-root .rdp-button_previous:hover .rdp-chevron,
+.rdp-root .rdp-button_next:hover .rdp-chevron {
+  fill: var(--color-brand);
+}

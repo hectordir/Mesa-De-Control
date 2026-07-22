@@ -116,11 +116,20 @@ export interface AnalisisMensualResponse {
   heatmap: AnalisisMensualHeatmap
 }
 
-/* ── Registro · Nueva Gestión (ver spec `registro-nueva-gestion`) ────────────
+/* ── Registro · Nueva Gestión (ver spec `registro-nueva-gestion`, §9) ─────────
    Endpoint: POST /gestiones (requiere JWT). El front envía VALORES de enum,
-   nunca etiquetas, y jamás `operadorId` (lo toma el back de `req.user`).      */
+   nunca etiquetas. Desde la Revisión 2 el `operadorId` viaja en el body (la
+   autoría la determina el operador seleccionado, ya no el token).             */
+
+/** Opción del select de operadores (`GET /operadores`, ordenado por nombre). */
+export interface OperadorOption {
+  id: string
+  nombre: string
+}
 
 export interface CreateGestionRequest {
+  /** * requerido — usuario (rol OPERADOR) al que se atribuye la gestión. */
+  operadorId: string
   /** 'YYYY-MM-DD' (por defecto hoy). */
   fecha: string
   /** * requerido — nombre/condominio del cliente. */

@@ -19,10 +19,20 @@ const RESULTADO_ENUM = [
 ] as const;
 
 /**
- * Alta de una gestión. El `operadorId` NUNCA viaja en el body: se toma de `req.user`.
- * `zona` se persiste en la columna `ubicacion`; el pin exacto va en `coordenadas`.
+ * Alta de una gestión. `operadorId` (§9.1) determina la autoría y debe referenciar
+ * un usuario con rol OPERADOR (lo valida el service). `zona` se persiste en la columna
+ * `ubicacion`; el pin exacto va en `coordenadas`.
  */
 export class CreateGestionDto {
+  @ApiProperty({
+    format: 'uuid',
+    example: '2f1a…',
+    description: 'Autoría de la gestión; debe ser un usuario con rol OPERADOR.',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'operadorId es obligatorio' })
+  operadorId!: string;
+
   @ApiProperty({
     description: 'Día de operación (por defecto hoy).',
     example: '2026-07-22',

@@ -5,6 +5,7 @@ import { createGestion } from './gestiones'
 import type { CreateGestionRequest, GestionResponse } from './types'
 
 const payload: CreateGestionRequest = {
+  operadorId: 'u-1',
   fecha: '2026-07-22',
   abonado: 'Cond. Los Robles',
   telefono: '0412 555 1234',

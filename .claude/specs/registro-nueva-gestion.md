@@ -1,7 +1,7 @@
 # Spec — Registro · Nueva Gestión
 
 - **Slug:** `registro-nueva-gestion`
-- **Estado:** Aprobado (2026-07-22) · En progreso
+- **Estado:** Aprobado (2026-07-22) · Hecho · **Revisión 2 aprobada (2026-07-22)** — ver §9
 - **Dominio(s):** ambos (front + back)
 - **Ticket(s) derivados:** back: `POST /gestiones` + extensión modelo · front: página `/registro`
 - **Diseño fuente:** `Registro Nueva Gestion.dc.html` → componente `NuevaGestion.dc.html`
@@ -190,3 +190,54 @@ src/features/registro/
     useCrearGestion.ts            # useMutation → createGestion, invalida dashboards
     useGestionForm.ts             # estado del formulario + validación (opcional, si simplifica)
 ```
+
+---
+
+## 9. Revisión 2 (aprobada 2026-07-22) — operador seleccionable + date picker
+
+Tres cambios sobre la página `/registro` ya entregada.
+
+### 9.1 Operador pasa a ser un **select** (cambia el contrato)
+
+- **Antes:** el operador era de solo lectura (nombre de la sesión) y `operadorId` salía del token.
+- **Ahora:** es un `<select>` de operadores; el elegido **determina la autoría** y su `id` viaja en el
+  body como `operadorId`. Se **precarga** con el operador de la sesión (`user.id`).
+- **Back — nuevo endpoint** para poblar el select:
+  `GET /operadores` — protegido con `JwtAuthGuard`, documentado en Swagger. Devuelve los usuarios con
+  rol `OPERADOR`, ordenados por nombre:
+  ```ts
+  interface OperadorOption { id: string; nombre: string }
+  // 200 → OperadorOption[]
+  ```
+- **Back — `POST /gestiones`** ahora acepta `operadorId` en el body (deja de tomarse de `req.user`):
+  ```ts
+  interface CreateGestionRequest {
+    operadorId: string;   // NUEVO · requerido · debe referenciar un usuario con rol OPERADOR
+    // …resto igual que §3…
+  }
+  ```
+  Validación: `@IsString()/@IsNotEmpty()` (o `@IsUUID()`); el service verifica que el usuario existe y
+  tiene rol `OPERADOR` → si no, `400` (o `404`). El endpoint sigue requiriendo JWT (cualquier usuario
+  autenticado puede registrar en nombre de un operador).
+- **Response 201**: sin cambios (`operador: { id, nombre }` ya refleja el operador persistido).
+
+### 9.2 Seed de operadores dummy
+
+Añadir al seed varios usuarios con rol `OPERADOR` (nombres realistas de mesa, p. ej. *Cristhian Rangel,
+Jhon Rivas, María Bastidas, Luis Colmenares, Andrea Pérez*) para poblar el select y los dashboards.
+Idempotente (`upsert` por email), sin romper el seed histórico existente ni los usuarios ya sembrados.
+
+### 9.3 Date picker
+
+Sustituir el `<input type="date">` por un componente de calendario con **`react-day-picker`**
+(dependencia nueva aprobada 🚦), estilizado con los tokens del tema (dark/light), accesible por teclado.
+Emite `YYYY-MM-DD` al formulario (mismo valor que hoy); no cambia el contrato de la API. Encapsular en
+`components/campos/DateField.tsx` (o `FechaField`) reutilizando el patrón de `campos/`.
+
+### 9.4 Tests añadidos (rojo primero)
+
+- **Back:** `GET /operadores` → 200 lista operadores (rol OPERADOR) / 401 sin token. `POST /gestiones`
+  con `operadorId` inexistente o de no-operador → 400/404; con `operadorId` válido → persiste esa autoría.
+  Seed: test/aserción de que crea los operadores dummy de forma idempotente.
+- **Front:** el select de operador se puebla desde `GET /operadores` (mock) y precarga la sesión; el
+  payload incluye el `operadorId` elegido; el `DateField` selecciona una fecha y emite `YYYY-MM-DD`.

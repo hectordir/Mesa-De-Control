@@ -1,8 +1,10 @@
 import { useState } from 'react'
 import type { CreateGestionRequest, ResultadoGestion } from '../../../lib/api/types'
 
-/** Estado local del formulario (el operador no vive aquí: viene de la sesión). */
+/** Estado local del formulario. Desde la Rev. 2 el operador es seleccionable. */
 export interface GestionFormValues {
+  /** Id del operador al que se atribuye la gestión (select). */
+  operadorId: string
   fecha: string
   abonado: string
   telefono: string
@@ -42,6 +44,7 @@ export function hoy(): string {
 
 function valoresIniciales(): GestionFormValues {
   return {
+    operadorId: '',
     fecha: hoy(),
     abonado: '',
     telefono: '',
@@ -60,6 +63,7 @@ function valoresIniciales(): GestionFormValues {
 /** Traduce el estado del formulario al contrato exacto de `POST /gestiones`. */
 export function toPayload(values: GestionFormValues): CreateGestionRequest {
   return {
+    operadorId: values.operadorId,
     fecha: values.fecha,
     abonado: values.abonado.trim(),
     telefono: values.telefono.trim(),
@@ -77,7 +81,7 @@ export function toPayload(values: GestionFormValues): CreateGestionRequest {
 
 /**
  * Estado y validación del formulario de Nueva Gestión.
- * `reset` conserva la fecha (y el operador, que no vive aquí).
+ * `reset` conserva la fecha y el operador seleccionado.
  */
 export function useGestionForm() {
   const [values, setValues] = useState<GestionFormValues>(valoresIniciales)
@@ -102,7 +106,11 @@ export function useGestionForm() {
   }
 
   function reset() {
-    setValues((prev) => ({ ...valoresIniciales(), fecha: prev.fecha }))
+    setValues((prev) => ({
+      ...valoresIniciales(),
+      fecha: prev.fecha,
+      operadorId: prev.operadorId,
+    }))
     setErrors({})
   }
 

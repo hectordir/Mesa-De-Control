@@ -10,6 +10,7 @@ export function SelectField({
   options,
   error,
   placeholder,
+  disabled,
 }: {
   label: string
   value: string
@@ -18,6 +19,7 @@ export function SelectField({
   error?: string
   /** Opción vacía inicial (para campos obligatorios sin valor por defecto). */
   placeholder?: string
+  disabled?: boolean
 }) {
   const id = useId()
   return (
@@ -25,10 +27,15 @@ export function SelectField({
       <select
         id={id}
         value={value}
+        disabled={disabled}
         aria-invalid={error ? true : undefined}
         aria-describedby={error ? `${id}-error` : undefined}
         onChange={(e) => onChange(e.target.value)}
-        className={controlClass(error)}
+        className={
+          disabled
+            ? controlClass(error) + ' cursor-not-allowed text-text-secondary'
+            : controlClass(error)
+        }
       >
         {placeholder ? <option value="">{placeholder}</option> : null}
         {options.map((opcion) => (
