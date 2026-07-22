@@ -115,3 +115,53 @@ export interface AnalisisMensualResponse {
   serie: AnalisisMensualBar[]
   heatmap: AnalisisMensualHeatmap
 }
+
+/* ── Registro · Nueva Gestión (ver spec `registro-nueva-gestion`) ────────────
+   Endpoint: POST /gestiones (requiere JWT). El front envía VALORES de enum,
+   nunca etiquetas, y jamás `operadorId` (lo toma el back de `req.user`).      */
+
+export interface CreateGestionRequest {
+  /** 'YYYY-MM-DD' (por defecto hoy). */
+  fecha: string
+  /** * requerido — nombre/condominio del cliente. */
+  abonado: string
+  /** * requerido — ej. '0412 555 1234'. */
+  telefono: string
+  /** * requerido — Detalle de Orden. */
+  detalle: string
+  /** * requerido — Solución Aplicada. */
+  solucion: string
+  /** Por defecto 'SOLUCIONADO_MESA'. */
+  resultado: ResultadoGestion
+  /** Tipo Resolución ('Mesa' | 'Soporte 2' | 'NOC' | 'Visita técnica'). */
+  tipo: string
+  requiereVisita: boolean
+  /** * requerido — Zona del Reporte (se persiste en `ubicacion`). */
+  zona: string
+  /** * requerido — Motivo de la Incidencia. */
+  motivo: string
+  /** * requerido — Observación del SAE. */
+  observacion: string
+  /** Opcional — pin 'lat, lng'. */
+  coordenadas: string | null
+}
+
+export interface GestionResponse {
+  id: string
+  /** 'YYYY-MM-DD' */
+  fecha: string
+  operador: { id: string; nombre: string }
+  abonado: string
+  telefono: string
+  detalle: string
+  solucion: string
+  resultado: ResultadoGestion
+  tipo: string
+  requiereVisita: boolean
+  zona: string
+  motivo: string
+  observacion: string
+  coordenadas: string | null
+  /** ISO instante */
+  createdAt: string
+}

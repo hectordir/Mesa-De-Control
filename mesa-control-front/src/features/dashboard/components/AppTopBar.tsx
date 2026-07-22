@@ -8,7 +8,7 @@ const EMPRESAS = ['Mesa de Control', 'Fibex Telecom', 'Soporte-NOC'] as const
 /** Secciones del producto; sólo Dashboard está implementada. */
 const SECCIONES = [
   { label: 'Dashboard', to: '/dashboard' },
-  { label: 'Registro', to: null },
+  { label: 'Registro', to: '/registro' },
   { label: 'Historial', to: null },
   { label: 'Fibex Play', to: null },
   { label: 'Admin', to: null },

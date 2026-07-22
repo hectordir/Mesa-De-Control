@@ -44,11 +44,24 @@ model Gestion {
   operadorId String
   resultado  ResultadoGestion
   motivo     String
+  /// Zona del reporte (alimenta el heatmap del Análisis Mensual).
   ubicacion  String
   /// Día de operación, deliberadamente separado de `createdAt` (instante):
   /// la mesa cierra el día a una hora que no tiene por qué ser medianoche.
   fecha      DateTime         @db.Date
   createdAt  DateTime         @default(now())
+  // ── Registro · Nueva Gestión ──
+  // Texto NOT NULL con default '' para no romper el seed histórico (filas previas
+  // sin estos campos) ni exigir un reseed: los inserts reales siempre los proveen.
+  abonado        String       @default("")
+  telefono       String       @default("")
+  detalle        String       @default("")
+  solucion       String       @default("")
+  tipo           String       @default("")
+  requiereVisita Boolean      @default(false)
+  observacion    String       @default("")
+  /// Pin exacto 'lat, lng'; opcional (la zona vive en `ubicacion`).
+  coordenadas    String?
 
   @@index([fecha])
   @@index([operadorId, fecha])
