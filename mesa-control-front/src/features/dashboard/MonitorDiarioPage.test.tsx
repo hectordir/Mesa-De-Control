@@ -4,8 +4,8 @@ import { MemoryRouter, Route, Routes } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import MonitorDiarioPage from './MonitorDiarioPage'
-import { RESUMEN_DEMO, RESUMEN_VACIO } from './fixtures'
 import { fetchMonitorDiario } from '../../lib/api/dashboard'
+import type { MonitorDiarioResumen } from '../../lib/api/types'
 import { createTestQueryClient } from '../../test/renderWithProviders'
 import { useAuthStore } from '../../stores/auth.store'
 
@@ -14,6 +14,101 @@ vi.mock('../../lib/api/dashboard', () => ({
 }))
 
 const fetchMock = vi.mocked(fetchMonitorDiario)
+
+/** Respuesta de ejemplo del endpoint: los números del diseño. */
+const RESPUESTA_CON_DATOS: MonitorDiarioResumen = {
+  fecha: '2026-07-17',
+  kpis: {
+    clientesAtendidos: 342,
+    efectividadMesa: 78,
+    enviadoSoporte2: 54,
+    escaladoNoc: 31,
+    pendienteCliente: 38,
+  },
+  operadores: [
+    { id: 'op-1', nombre: 'Jhon Rivas', clientes: 78, mesa: 63, soporte2: 11, noc: 7 },
+    { id: 'op-2', nombre: 'María León', clientes: 66, mesa: 52, soporte2: 9, noc: 6 },
+    { id: 'op-3', nombre: 'Carlos Díaz', clientes: 59, mesa: 40, soporte2: 13, noc: 6 },
+    { id: 'op-4', nombre: 'Ana Quintero', clientes: 71, mesa: 58, soporte2: 10, noc: 7 },
+    { id: 'op-5', nombre: 'Luis Parra', clientes: 68, mesa: 54, soporte2: 11, noc: 5 },
+  ],
+  distribucion: [
+    { resultado: 'SOLUCIONADO_MESA', total: 198 },
+    { resultado: 'ENVIADO_SOPORTE2', total: 54 },
+    { resultado: 'ESCALADO_NOC', total: 31 },
+    { resultado: 'PENDIENTE_CLIENTE', total: 38 },
+    { resultado: 'REAGENDADO', total: 21 },
+  ],
+  topAverias: [
+    { motivo: 'Corte de fibra (FTTH)', total: 84 },
+    { motivo: 'Sin señal / ONT', total: 61 },
+    { motivo: 'Lentitud de navegación', total: 47 },
+    { motivo: 'Falla en IPTV', total: 33 },
+    { motivo: 'WiFi intermitente', total: 28 },
+  ],
+  actividad: [
+    {
+      id: 'act-1',
+      operador: 'Jhon Rivas',
+      resultado: 'SOLUCIONADO_MESA',
+      ubicacion: 'Cond. Los Robles',
+      hora: '2026-07-17T10:42:00-04:00',
+    },
+    {
+      id: 'act-2',
+      operador: 'María León',
+      resultado: 'ENVIADO_SOPORTE2',
+      ubicacion: 'Torre Aurora',
+      hora: '2026-07-17T10:39:00-04:00',
+    },
+    {
+      id: 'act-3',
+      operador: 'Carlos Díaz',
+      resultado: 'ESCALADO_NOC',
+      ubicacion: 'Res. El Mirador',
+      hora: '2026-07-17T10:31:00-04:00',
+    },
+    {
+      id: 'act-4',
+      operador: 'Ana Quintero',
+      resultado: 'PENDIENTE_CLIENTE',
+      ubicacion: 'Plaza Central',
+      hora: '2026-07-17T10:25:00-04:00',
+    },
+    {
+      id: 'act-5',
+      operador: 'Luis Parra',
+      resultado: 'SOLUCIONADO_MESA',
+      ubicacion: 'Barrio San Luis',
+      hora: '2026-07-17T10:18:00-04:00',
+    },
+  ],
+}
+
+/**
+ * Día sin gestiones tal como responde el back: `200`, KPI en 0, arrays vacíos y
+ * la distribución con los cinco resultados en 0.
+ */
+const RESPUESTA_VACIA: MonitorDiarioResumen = {
+  fecha: '2026-07-17',
+  kpis: {
+    clientesAtendidos: 0,
+    efectividadMesa: 0,
+    enviadoSoporte2: 0,
+    escaladoNoc: 0,
+    pendienteCliente: 0,
+  },
+  operadores: [],
+  distribucion: [
+    { resultado: 'SOLUCIONADO_MESA', total: 0 },
+    { resultado: 'ENVIADO_SOPORTE2', total: 0 },
+    { resultado: 'ESCALADO_NOC', total: 0 },
+    { resultado: 'PENDIENTE_CLIENTE', total: 0 },
+    { resultado: 'REAGENDADO', total: 0 },
+  ],
+  topAverias: [],
+  actividad: [],
+}
 
 function renderPage() {
   return render(
@@ -48,7 +143,7 @@ beforeEach(() => {
 
 describe('MonitorDiarioPage · estado con datos', () => {
   beforeEach(() => {
-    fetchMock.mockResolvedValue(RESUMEN_DEMO)
+    fetchMock.mockResolvedValue(RESPUESTA_CON_DATOS)
   })
 
   it('muestra el encabezado de la vista', async () => {
@@ -195,7 +290,7 @@ describe('MonitorDiarioPage · estado de carga', () => {
 
 describe('MonitorDiarioPage · estado vacío', () => {
   beforeEach(() => {
-    fetchMock.mockResolvedValue(RESUMEN_VACIO)
+    fetchMock.mockResolvedValue(RESPUESTA_VACIA)
   })
 
   it('muestra los KPI en cero con su meta vacía', async () => {
@@ -229,7 +324,7 @@ describe('MonitorDiarioPage · estado vacío', () => {
 describe('MonitorDiarioPage · estado de error', () => {
   it('muestra el aviso y reintenta la consulta', async () => {
     fetchMock.mockRejectedValueOnce(new Error('sin red'))
-    fetchMock.mockResolvedValue(RESUMEN_DEMO)
+    fetchMock.mockResolvedValue(RESPUESTA_CON_DATOS)
     renderPage()
 
     expect(

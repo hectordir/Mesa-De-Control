@@ -16,6 +16,14 @@ enum Role {
   ADMIN
 }
 
+enum ResultadoGestion {
+  SOLUCIONADO_MESA
+  ENVIADO_SOPORTE2
+  ESCALADO_NOC
+  PENDIENTE_CLIENTE
+  REAGENDADO
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -25,4 +33,23 @@ model User {
   isActive     Boolean  @default(true)
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
+
+  gestiones Gestion[]
+}
+
+/// Una atención registrada por un operador de la mesa.
+model Gestion {
+  id         String           @id @default(uuid())
+  operador   User             @relation(fields: [operadorId], references: [id])
+  operadorId String
+  resultado  ResultadoGestion
+  motivo     String
+  ubicacion  String
+  /// Día de operación, deliberadamente separado de `createdAt` (instante):
+  /// la mesa cierra el día a una hora que no tiene por qué ser medianoche.
+  fecha      DateTime         @db.Date
+  createdAt  DateTime         @default(now())
+
+  @@index([fecha])
+  @@index([operadorId, fecha])
 }
