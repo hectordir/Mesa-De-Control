@@ -1,0 +1,85 @@
+/* ============================================================
+   Fibex Control — Design tokens
+   Semantic CSS variables. Dark is the default theme.
+   Switch to light by adding data-theme="light" (or .light)
+   on <html> or any container.
+   ============================================================ */
+
+:root,
+[data-theme="dark"],
+.dark {
+  /* surfaces */
+  --color-bg: #0B0F1A;
+  --color-surface: #111826;
+  --color-surface-elevated: #171F30;
+  --color-border: #232C40;
+  --color-border-subtle: #1A2234;
+
+  /* text */
+  --color-text-primary: #E6EAF2;
+  --color-text-secondary: #9AA5BB;
+  --color-text-muted: #5E6A82;
+
+  /* brand + semantic */
+  --color-brand: #2563EB;
+  --color-on-brand: #FFFFFF;
+  --color-success: #10B981;
+  --color-warning: #F59E0B;
+  --color-danger: #F43F5E;
+  --color-info: #38BDF8;
+  --color-neutral: #64748B;
+
+  /* categorical (fixed order, max 6) */
+  --color-cat-1: #2563EB;
+  --color-cat-2: #14B8A6;
+  --color-cat-3: #F59E0B;
+  --color-cat-4: #8B5CF6;
+  --color-cat-5: #F43F5E;
+  --color-cat-6: #64748B;
+
+  /* map */
+  --color-map-bg: #0C1220;
+  --color-map-grid: #1A2438;
+
+  /* elevation */
+  --shadow-elevation: 0 1px 2px rgba(0, 0, 0, .4);
+}
+
+[data-theme="light"],
+.light {
+  /* surfaces */
+  --color-bg: #F6F8FB;
+  --color-surface: #FFFFFF;
+  --color-surface-elevated: #FFFFFF;
+  --color-border: #E3E8F0;
+  --color-border-subtle: #EEF2F7;
+
+  /* text */
+  --color-text-primary: #0B1220;
+  --color-text-secondary: #4A5568;
+  --color-text-muted: #8894A8;
+
+  /* brand + semantic */
+  --color-brand: #1D4ED8;
+  --color-on-brand: #FFFFFF;
+  --color-success: #059669;
+  --color-warning: #D97706;
+  --color-danger: #E11D48;
+  --color-info: #0EA5E9;
+  --color-neutral: #64748B;
+
+  /* categorical (fixed order, max 6) */
+  --color-cat-1: #1D4ED8;
+  --color-cat-2: #0D9488;
+  --color-cat-3: #D97706;
+  --color-cat-4: #7C3AED;
+  --color-cat-5: #E11D48;
+  --color-cat-6: #64748B;
+
+  /* map */
+  --color-map-bg: #EEF2F8;
+  --color-map-grid: #DCE3EE;
+
+  /* elevation */
+  --shadow-elevation: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);
+}

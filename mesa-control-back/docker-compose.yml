@@ -1,0 +1,22 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mesa-control-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: mesa
+      POSTGRES_PASSWORD: mesa
+      POSTGRES_DB: mesa_control
+    ports:
+      # Puerto host configurable por si 5432 ya está ocupado (POSTGRES_PORT en .env)
+      - '${POSTGRES_PORT:-5432}:5432'
+    volumes:
+      - mesa-control-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U mesa -d mesa_control']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  mesa-control-pgdata:
