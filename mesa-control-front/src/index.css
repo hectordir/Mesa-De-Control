@@ -9,3 +9,53 @@
     @apply bg-bg text-text-primary font-sans text-body;
   }
 }
+
+@keyframes fx-shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@keyframes fx-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+@layer utilities {
+  /* Bloque de carga: degradado de bordes recorriendo la pieza. */
+  .fx-skeleton {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-border-subtle),
+      var(--color-border),
+      var(--color-border-subtle)
+    );
+    background-size: 200% 100%;
+    animation: fx-shimmer 1.4s infinite linear;
+  }
+
+  /* Punto "En vivo". */
+  .fx-pulse {
+    animation: fx-pulse 1.6s infinite;
+  }
+
+  /* Cifras alineadas en tablas y KPIs. */
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .fx-skeleton,
+    .fx-pulse {
+      animation: none;
+    }
+  }
+}

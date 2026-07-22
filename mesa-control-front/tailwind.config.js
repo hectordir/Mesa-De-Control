@@ -48,12 +48,31 @@ export default {
           soft: alpha("--color-brand", 14),
           outline: alpha("--color-brand", 40),
           ring: alpha("--color-brand", 22),
+          // derivados del monitor diario (ver tokens.css)
+          nav: "var(--color-brand-nav)",
+          chip: "var(--color-brand-chip)",
+          avatar: "var(--color-brand-avatar)",
         },
-        success: "var(--color-success)",
-        warning: "var(--color-warning)",
-        danger: "var(--color-danger)",
-        info: "var(--color-info)",
-        neutral: "var(--color-neutral)",
+        success: {
+          DEFAULT: "var(--color-success)",
+          soft: "var(--color-success-soft)",
+        },
+        warning: {
+          DEFAULT: "var(--color-warning)",
+          soft: "var(--color-warning-soft)",
+        },
+        danger: {
+          DEFAULT: "var(--color-danger)",
+          soft: "var(--color-danger-soft)",
+        },
+        info: {
+          DEFAULT: "var(--color-info)",
+          soft: "var(--color-info-soft)",
+        },
+        neutral: {
+          DEFAULT: "var(--color-neutral)",
+          soft: "var(--color-neutral-soft)",
+        },
         cat: {
           1: "var(--color-cat-1)",
           2: "var(--color-cat-2)",

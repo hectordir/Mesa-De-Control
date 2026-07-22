@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  @keyframes fx-spin{to{transform:rotate(360deg)}}
+  @keyframes fx-shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+  @keyframes fx-pulse{0%,100%{opacity:1}50%{opacity:.45}}
+</style>
+</helmet>
+
+<div style="background:var(--bg); color:var(--text-primary); font-family:Inter,system-ui,sans-serif; font-variant-numeric:tabular-nums; padding:24px; display:flex; flex-direction:column; gap:20px">
+
+  <!-- ===== TOP BAR ===== -->
+  <div style="display:flex; align-items:center; gap:14px; height:56px; padding:0 14px; background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow)">
+    <div style="display:flex; align-items:center; gap:8px; padding-right:14px; border-right:1px solid var(--border-subtle); flex-shrink:0">
+      <div style="width:22px; height:22px; border-radius:6px; background:var(--brand); display:flex; align-items:center; justify-content:center; color:var(--on-brand); font-size:13px; font-weight:700">F</div>
+      <span style="font-size:15px; font-weight:700; letter-spacing:-.01em">Fibex Control</span>
+    </div>
+    <div style="display:flex; padding:3px; gap:2px; background:var(--bg); border:1px solid var(--border-subtle); border-radius:8px; flex-shrink:0">
+      <span style="padding:5px 10px; font-size:12px; font-weight:600; border-radius:6px; background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow)">Mesa de Control</span>
+      <span style="padding:5px 10px; font-size:12px; font-weight:500; border-radius:6px; color:var(--text-secondary)">Fibex Telecom</span>
+      <span style="padding:5px 10px; font-size:12px; font-weight:500; border-radius:6px; color:var(--text-secondary)">Soporte-NOC</span>
+    </div>
+    <nav style="display:flex; gap:2px; min-width:0; overflow:hidden">
+      <span style="padding:7px 10px; font-size:13px; font-weight:600; color:var(--brand); border-radius:8px; background:color-mix(in srgb, var(--brand) 12%, transparent)">Dashboard</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Registro</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Historial</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Fibex Play</span>
+      <span style="padding:7px 10px; font-size:13px; font-weight:500; color:var(--text-secondary); border-radius:8px">Admin</span>
+    </nav>
+    <div style="flex:1; min-width:8px"></div>
+    <div style="display:flex; align-items:center; gap:12px; flex-shrink:0">
+      <div style="width:32px; height:32px; border-radius:8px; border:1px solid var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-secondary); font-size:13px">{{ themeGlyph }}</div>
+      <div style="display:flex; align-items:center; gap:8px; padding-left:12px; border-left:1px solid var(--border-subtle)">
+        <div style="width:30px; height:30px; border-radius:50%; background:color-mix(in srgb, var(--brand) 22%, var(--surface)); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:12px; font-weight:700">JR</div>
+        <span style="font-size:13px; font-weight:500; color:var(--text-secondary)">Salir</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== TITLE + CONTROL BAR ===== -->
+  <div style="display:flex; align-items:flex-end; justify-content:space-between; gap:20px; flex-wrap:wrap">
+    <div style="display:flex; flex-direction:column; gap:4px">
+      <div style="font-size:24px; font-weight:700; letter-spacing:-.02em">Monitor Diario</div>
+      <div style="font-size:13px; color:var(--text-muted)">Vista operativa de la mesa de control · {{ opDayLong }}</div>
+    </div>
+    <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap">
+      <!-- segmented -->
+      <div style="display:flex; padding:3px; gap:2px; background:var(--bg); border:1px solid var(--border); border-radius:9px">
+        <span style="display:inline-flex; align-items:center; gap:6px; padding:7px 13px; font-size:13px; font-weight:600; border-radius:6px; background:var(--surface); color:var(--text-primary); box-shadow:var(--shadow)"><span style="width:6px; height:6px; border-radius:50%; background:var(--success)"></span>Monitor Diario</span>
+        <span style="padding:7px 13px; font-size:13px; font-weight:500; border-radius:6px; color:var(--text-secondary)">Análisis Mensual</span>
+      </div>
+      <!-- date -->
+      <div style="display:flex; align-items:center; gap:10px; padding:5px 5px 5px 12px; background:var(--surface); border:1px solid var(--border); border-radius:9px; box-shadow:var(--shadow)">
+        <span style="font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted)">Fecha de operación</span>
+        <div style="display:flex; align-items:center; gap:7px; padding:6px 10px; background:var(--bg); border:1px solid var(--border); border-radius:7px; font-size:13px; font-weight:600; color:var(--text-primary)">
+          <span style="color:var(--text-muted)">▦</span>{{ opDayShort }}<span style="color:var(--text-muted); font-size:11px">▾</span>
+        </div>
+        <button style="padding:8px 12px; font:inherit; font-size:12px; font-weight:600; color:var(--text-secondary); background:transparent; border:none; border-radius:7px; cursor:pointer" style-hover="background:var(--bg); color:var(--text-primary)">Volver a hoy</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== KPI ROW ===== -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px">
+    <sc-for list="{{ kpis }}" as="k" hint-placeholder-count="5">
+      <div style="position:relative; padding:16px; padding-left:18px; background:var(--surface); border:1px solid var(--border); border-left:3px solid {{ k.color }}; border-radius:12px; box-shadow:var(--shadow); display:flex; flex-direction:column; gap:10px; min-height:118px">
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:8px">
+          <span style="font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted)">{{ k.label }}</span>
+          <span style="width:7px; height:7px; border-radius:50%; background:{{ k.color }}"></span>
+        </div>
+        <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+          <div style="height:32px; width:70%; border-radius:7px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></div>
+        </sc-if>
+        <sc-if value="{{ notLoading }}" hint-placeholder-val="{{ true }}">
+          <div style="font-size:32px; font-weight:700; letter-spacing:-.02em; line-height:1; color:{{ k.numColor }}">{{ k.shown }}</div>
+        </sc-if>
+        <div style="font-size:12px; color:var(--text-muted)">{{ k.metaShown }}</div>
+      </div>
+    </sc-for>
+  </div>
+
+  <!-- ===== PANELS ROW 1 ===== -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:16px; align-items:start">
+
+    <!-- Resumen por operador -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column">
+      <div style="display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:16px; border-bottom:1px solid var(--border-subtle)">
+        <div>
+          <div style="font-size:14px; font-weight:600">Resumen por operador</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:2px">Productividad y distribución por persona</div>
+        </div>
+        <div style="display:flex; align-items:center; gap:7px; padding:6px 10px; background:var(--bg); border:1px solid var(--border); border-radius:8px; min-width:150px">
+          <span style="color:var(--text-muted); font-size:13px">⌕</span>
+          <span style="font-size:12px; color:var(--text-muted)">Buscar operador…</span>
+        </div>
+      </div>
+
+      <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}">
+        <div>
+          <table style="width:100%; border-collapse:collapse; font-size:13px">
+            <thead>
+              <tr>
+                <th style="text-align:left; padding:9px 16px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); border-bottom:1px solid var(--border)">Operador</th>
+                <th style="text-align:right; padding:9px 12px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); border-bottom:1px solid var(--border)">Clientes</th>
+                <th style="text-align:right; padding:9px 12px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); border-bottom:1px solid var(--border)">Mesa</th>
+                <th style="text-align:right; padding:9px 12px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); border-bottom:1px solid var(--border)">Sop. 2</th>
+                <th style="text-align:right; padding:9px 16px; font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted); border-bottom:1px solid var(--border)">NOC</th>
+              </tr>
+            </thead>
+            <tbody>
+              <sc-for list="{{ operators }}" as="o" hint-placeholder-count="5">
+                <tr>
+                  <td style="padding:11px 16px; border-bottom:1px solid var(--border-subtle)">
+                    <div style="display:flex; align-items:center; gap:9px">
+                      <span style="width:26px; height:26px; border-radius:50%; background:color-mix(in srgb, var(--brand) 20%, var(--surface)); color:var(--brand); display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0">{{ o.ini }}</span>
+                      <div style="display:flex; flex-direction:column; gap:2px; min-width:0">
+                        <span style="font-weight:600; color:var(--text-primary)">{{ o.name }}</span>
+                        <span style="display:inline-flex; align-items:center; gap:5px; font-size:11px; font-weight:600; color:{{ o.effColor }}"><span style="width:5px; height:5px; border-radius:50%; background:{{ o.effColor }}"></span>{{ o.eff }}% efectividad</span>
+                      </div>
+                    </div>
+                  </td>
+                  <td style="padding:11px 12px; text-align:right; font-weight:600; border-bottom:1px solid var(--border-subtle)">{{ o.cli }}</td>
+                  <td style="padding:11px 12px; text-align:right; color:var(--text-secondary); border-bottom:1px solid var(--border-subtle)">{{ o.mesa }}</td>
+                  <td style="padding:11px 12px; text-align:right; color:var(--text-secondary); border-bottom:1px solid var(--border-subtle)">{{ o.sop }}</td>
+                  <td style="padding:11px 16px; text-align:right; color:var(--text-secondary); border-bottom:1px solid var(--border-subtle)">{{ o.noc }}</td>
+                </tr>
+              </sc-for>
+              <tr style="background:var(--elevated)">
+                <td style="padding:11px 16px; font-size:11px; font-weight:700; letter-spacing:.05em; text-transform:uppercase; color:var(--text-secondary)">Total</td>
+                <td style="padding:11px 12px; text-align:right; font-weight:700">{{ tot.cli }}</td>
+                <td style="padding:11px 12px; text-align:right; font-weight:700">{{ tot.mesa }}</td>
+                <td style="padding:11px 12px; text-align:right; font-weight:700">{{ tot.sop }}</td>
+                <td style="padding:11px 16px; text-align:right; font-weight:700">{{ tot.noc }}</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="min-height:280px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px; text-align:center">
+          <div style="width:46px; height:46px; border-radius:11px; border:1.5px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:22px">☷</div>
+          <div style="font-size:14px; font-weight:600">Aún no hay gestiones hoy</div>
+          <div style="font-size:12px; color:var(--text-muted); max-width:240px; line-height:1.5">Cuando el equipo registre atenciones, verás aquí el desglose por operador.</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:16px; display:flex; flex-direction:column; gap:14px; min-height:280px">
+          <sc-for list="{{ skelRows }}" as="s" hint-placeholder-count="5">
+            <div style="display:flex; align-items:center; gap:12px">
+              <span style="width:26px; height:26px; border-radius:50%; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite; flex-shrink:0"></span>
+              <span style="flex:1; height:12px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+              <span style="width:36px; height:12px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+              <span style="width:36px; height:12px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+
+      <div style="padding:14px 16px; border-top:1px solid var(--border-subtle)">
+        <button style="width:100%; padding:11px 16px; font:inherit; font-size:13px; font-weight:600; color:var(--on-brand); background:var(--brand); border:none; border-radius:8px; cursor:pointer; display:inline-flex; align-items:center; justify-content:center; gap:8px" style-hover="background:color-mix(in srgb, var(--brand) 88%, #000)"><span style="font-size:14px">✈</span>Generar reporte Telegram</button>
+      </div>
+    </div>
+
+    <!-- Distribución de resultados -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden; display:flex; flex-direction:column">
+      <div style="padding:16px; border-bottom:1px solid var(--border-subtle)">
+        <div style="font-size:14px; font-weight:600">Distribución de resultados</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:2px">Cómo se cerró cada gestión</div>
+      </div>
+      <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:20px 16px; display:flex; align-items:center; gap:24px; flex-wrap:wrap; justify-content:center">
+          <div style="position:relative; width:172px; height:172px; border-radius:50%; flex-shrink:0; background:conic-gradient(var(--c2) 0 57.9%, var(--c3) 57.9% 73.7%, var(--c5) 73.7% 82.8%, var(--c1) 82.8% 93.9%, var(--c4) 93.9% 100%)">
+            <div style="position:absolute; inset:26px; border-radius:50%; background:var(--surface); display:flex; flex-direction:column; align-items:center; justify-content:center; gap:2px; box-shadow:inset 0 0 0 1px var(--border-subtle)">
+              <span style="font-size:30px; font-weight:700; letter-spacing:-.02em; line-height:1">{{ donutTotal }}</span>
+              <span style="font-size:11px; font-weight:600; letter-spacing:.05em; text-transform:uppercase; color:var(--text-muted)">gestiones</span>
+            </div>
+          </div>
+          <div style="display:flex; flex-direction:column; gap:9px; min-width:180px; flex:1">
+            <sc-for list="{{ donut }}" as="d" hint-placeholder-count="5">
+              <div style="display:flex; align-items:center; gap:9px">
+                <span style="width:10px; height:10px; border-radius:3px; background:{{ d.color }}; flex-shrink:0"></span>
+                <span style="flex:1; font-size:13px; color:var(--text-secondary)">{{ d.name }}</span>
+                <span style="font-size:13px; font-weight:600; color:var(--text-primary)">{{ d.v }}</span>
+                <span style="font-size:12px; color:var(--text-muted); width:42px; text-align:right">{{ d.pct }}%</span>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="min-height:212px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px; text-align:center">
+          <div style="width:88px; height:88px; border-radius:50%; border:8px solid var(--border-subtle); display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:20px">○</div>
+          <div style="font-size:14px; font-weight:600">Sin gestiones para graficar</div>
+          <div style="font-size:12px; color:var(--text-muted); max-width:240px; line-height:1.5">La distribución aparecerá cuando se cierre la primera gestión del día.</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:20px 16px; display:flex; align-items:center; gap:24px; min-height:212px">
+          <span style="width:172px; height:172px; border-radius:50%; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite; flex-shrink:0"></span>
+          <div style="display:flex; flex-direction:column; gap:12px; flex:1">
+            <sc-for list="{{ skelRows }}" as="s" hint-placeholder-count="5">
+              <span style="height:11px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+            </sc-for>
+          </div>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+  <!-- ===== PANELS ROW 2 ===== -->
+  <div style="display:grid; grid-template-columns:repeat(auto-fit,minmax(360px,1fr)); gap:16px; align-items:start">
+
+    <!-- Top 5 Averías -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden">
+      <div style="padding:16px; border-bottom:1px solid var(--border-subtle)">
+        <div style="font-size:14px; font-weight:600">Top 5 Averías</div>
+        <div style="font-size:12px; color:var(--text-muted); margin-top:2px">Motivos con mayor volumen hoy</div>
+      </div>
+      <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:16px; display:flex; flex-direction:column; gap:14px">
+          <sc-for list="{{ averias }}" as="a" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <div style="display:flex; align-items:center; justify-content:space-between; font-size:13px">
+                <span style="color:var(--text-secondary)">{{ a.name }}</span>
+                <span style="font-weight:700; color:var(--text-primary)">{{ a.v }}</span>
+              </div>
+              <div style="height:9px; border-radius:5px; background:var(--bg); overflow:hidden">
+                <div style="height:100%; border-radius:5px; background:var(--c1); width:{{ a.pct }}%"></div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="min-height:230px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px; text-align:center">
+          <div style="width:46px; height:46px; border-radius:11px; border:1.5px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:22px">▤</div>
+          <div style="font-size:14px; font-weight:600">Sin averías registradas hoy</div>
+          <div style="font-size:12px; color:var(--text-muted); max-width:240px; line-height:1.5">Los motivos más reportados se ordenarán aquí conforme entren gestiones.</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:16px; display:flex; flex-direction:column; gap:18px; min-height:230px">
+          <sc-for list="{{ skelRows }}" as="s" hint-placeholder-count="5">
+            <div style="display:flex; flex-direction:column; gap:6px">
+              <span style="width:50%; height:11px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+              <span style="width:{{ s.w }}%; height:9px; border-radius:5px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+
+    <!-- Radar de Operaciones -->
+    <div style="background:var(--surface); border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow); overflow:hidden">
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:16px; border-bottom:1px solid var(--border-subtle)">
+        <div>
+          <div style="font-size:14px; font-weight:600">Radar de Operaciones</div>
+          <div style="font-size:12px; color:var(--text-muted); margin-top:2px">Actividad del equipo en tiempo real</div>
+        </div>
+        <span style="display:inline-flex; align-items:center; gap:6px; font-size:11px; font-weight:600; color:var(--success)"><span style="width:7px; height:7px; border-radius:50%; background:var(--success); animation:fx-pulse 1.6s infinite"></span>En vivo</span>
+      </div>
+      <sc-if value="{{ isData }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:8px 16px 16px">
+          <sc-for list="{{ radar }}" as="r" hint-placeholder-count="5">
+            <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--border-subtle)">
+              <span style="width:32px; height:32px; border-radius:50%; background:color-mix(in srgb, {{ r.color }} 18%, var(--surface)); color:{{ r.color }}; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0">{{ r.ini }}</span>
+              <div style="flex:1; min-width:0; display:flex; flex-direction:column; gap:2px">
+                <div style="font-size:13px"><span style="font-weight:600; color:var(--text-primary)">{{ r.op }}</span> <span style="color:var(--text-secondary)">{{ r.act }}</span></div>
+                <div style="font-size:11px; color:var(--text-muted)">{{ r.place }}</div>
+              </div>
+              <span style="font-size:12px; color:var(--text-muted); flex-shrink:0">{{ r.time }}</span>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isEmpty }}" hint-placeholder-val="{{ true }}">
+        <div style="min-height:230px; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:12px; padding:32px; text-align:center">
+          <div style="width:46px; height:46px; border-radius:11px; border:1.5px dashed var(--border); display:flex; align-items:center; justify-content:center; color:var(--text-muted); font-size:20px">⦿</div>
+          <div style="font-size:14px; font-weight:600">Sin actividad reciente</div>
+          <div style="font-size:12px; color:var(--text-muted); max-width:240px; line-height:1.5">El radar mostrará cada acción del equipo en cuanto comiencen las gestiones.</div>
+        </div>
+      </sc-if>
+      <sc-if value="{{ isLoading }}" hint-placeholder-val="{{ true }}">
+        <div style="padding:8px 16px 16px; min-height:230px">
+          <sc-for list="{{ skelRows }}" as="s" hint-placeholder-count="5">
+            <div style="display:flex; gap:12px; padding:11px 0; border-bottom:1px solid var(--border-subtle)">
+              <span style="width:32px; height:32px; border-radius:50%; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite; flex-shrink:0"></span>
+              <div style="flex:1; display:flex; flex-direction:column; gap:6px; justify-content:center">
+                <span style="width:80%; height:11px; border-radius:6px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+                <span style="width:45%; height:9px; border-radius:5px; background:linear-gradient(90deg,var(--border-subtle),var(--border),var(--border-subtle)); background-size:200% 100%; animation:fx-shimmer 1.4s infinite"></span>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+      </sc-if>
+    </div>
+  </div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1200,"height":900},"mode":{"editor":"enum","options":["data","empty","loading"],"default":"data","tsType":"string"},"themeGlyph":{"editor":null,"default":"☾","tsType":"string"}}'>
+class Component extends DCLogic {
+  renderVals(){
+    const mode = this.props.mode || 'data';
+    const isData = mode==='data', isEmpty = mode==='empty', isLoading = mode==='loading';
+    const notLoading = !isLoading;
+
+    const tone = t => 'var(--'+t+')';
+    const kpiDefs = [
+      {label:'Clientes Atendidos', value:'342', meta:'total registrado', emptyMeta:'sin registro hoy', t:'brand'},
+      {label:'Efectividad Mesa',   value:'78%', meta:'meta 75% · +3 pts', emptyMeta:'meta 75%', t:'success'},
+      {label:'Enviado a Soporte 2',value:'54',  meta:'casos', emptyMeta:'0 casos', t:'warning'},
+      {label:'Escalado a NOC',     value:'31',  meta:'meta ≤ 25 · +6', emptyMeta:'meta ≤ 25', t:'danger'},
+      {label:'Pendiente Cliente',  value:'38',  meta:'meta ≤ 40', emptyMeta:'meta ≤ 40', t:'info'},
+    ];
+    const kpis = kpiDefs.map(k=>{
+      const empty = isEmpty;
+      const shown = empty ? (k.value.includes('%')?'0%':'0') : k.value;
+      return {
+        label:k.label, color:tone(k.t),
+        shown,
+        numColor: empty ? 'var(--text-muted)' : 'var(--text-primary)',
+        metaShown: empty ? k.emptyMeta : k.meta,
+      };
+    });
+
+    const opDefs = [
+      {ini:'JR', name:'Jhon Rivas',   cli:78, mesa:63, sop:11, noc:7},
+      {ini:'ML', name:'María León',   cli:66, mesa:52, sop:9,  noc:6},
+      {ini:'CD', name:'Carlos Díaz',  cli:59, mesa:40, sop:13, noc:6},
+      {ini:'AQ', name:'Ana Quintero', cli:71, mesa:58, sop:10, noc:7},
+      {ini:'LP', name:'Luis Parra',   cli:68, mesa:54, sop:11, noc:5},
+    ];
+    const operators = opDefs.map(o=>{
+      const eff = Math.round(o.mesa/o.cli*100);
+      return {...o, eff, effColor: eff>=75 ? 'var(--success)' : 'var(--warning)'};
+    });
+    const tot = opDefs.reduce((a,o)=>({cli:a.cli+o.cli,mesa:a.mesa+o.mesa,sop:a.sop+o.sop,noc:a.noc+o.noc}),{cli:0,mesa:0,sop:0,noc:0});
+
+    const donut = [
+      {name:'Solucionado en Mesa', v:198, pct:57.9, color:'var(--c2)'},
+      {name:'Enviado a Soporte 2', v:54,  pct:15.8, color:'var(--c3)'},
+      {name:'Escalado a NOC',      v:31,  pct:9.1,  color:'var(--c5)'},
+      {name:'Pendiente Cliente',   v:38,  pct:11.1, color:'var(--c1)'},
+      {name:'Reagendado',          v:21,  pct:6.1,  color:'var(--c4)'},
+    ];
+    const donutTotal = 342;
+
+    const avDefs = [
+      {name:'Corte de fibra (FTTH)', v:84},
+      {name:'Sin señal / ONT',       v:61},
+      {name:'Lentitud de navegación',v:47},
+      {name:'Falla en IPTV',         v:33},
+      {name:'WiFi intermitente',     v:28},
+    ];
+    const avMax = Math.max(...avDefs.map(a=>a.v));
+    const averias = avDefs.map(a=>({...a, pct: Math.round(a.v/avMax*100)}));
+
+    const radar = [
+      {ini:'JR', op:'Jhon Rivas',   act:'solucionó en Mesa', place:'Cond. Los Robles',  time:'10:42', color:'var(--success)'},
+      {ini:'ML', op:'María León',   act:'envió a Soporte 2', place:'Torre Aurora',      time:'10:39', color:'var(--warning)'},
+      {ini:'CD', op:'Carlos Díaz',  act:'escaló a NOC',      place:'Res. El Mirador',   time:'10:31', color:'var(--danger)'},
+      {ini:'AQ', op:'Ana Quintero', act:'marcó Pendiente Cliente', place:'Plaza Central', time:'10:25', color:'var(--info)'},
+      {ini:'LP', op:'Luis Parra',   act:'solucionó en Mesa', place:'Barrio San Luis',   time:'10:18', color:'var(--success)'},
+    ];
+
+    const skelRows = [{w:88},{w:66},{w:52},{w:40},{w:31}];
+
+    return {
+      isData, isEmpty, isLoading, notLoading,
+      themeGlyph: this.props.themeGlyph || '☾',
+      opDayLong:'jueves 17 de julio de 2026',
+      opDayShort:'17 jul 2026',
+      kpis, operators, tot, donut, donutTotal, averias, radar, skelRows,
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -49,7 +49,7 @@ describe('rutas de la SPA', () => {
     useAuthStore.setState(session)
     renderAt('/')
     expect(
-      await screen.findByRole('heading', { name: 'Mesa de Control', level: 1 }),
+      await screen.findByRole('heading', { name: 'Monitor Diario', level: 1 }),
     ).toBeInTheDocument()
   })
 

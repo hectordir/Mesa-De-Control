@@ -50,6 +50,29 @@ describe('primitivas de UI y páginas: solo utilidades de token', () => {
     expect(sources.some(([f]) => f.startsWith('src/routes/'))).toBe(true)
   })
 
+  it('cubre el dashboard completo (página, hooks y componentes)', () => {
+    const dashboard = sources.filter(([f]) =>
+      f.startsWith('src/features/dashboard/'),
+    )
+    expect(dashboard.length).toBeGreaterThanOrEqual(20)
+    for (const parcial of [
+      'src/features/dashboard/MonitorDiarioPage.tsx',
+      'src/features/dashboard/hooks/useMonitorDiario.ts',
+      'src/features/dashboard/components/DonutChart.tsx',
+    ]) {
+      expect(dashboard.some(([f]) => f === parcial), parcial).toBe(true)
+    }
+  })
+
+  for (const [file, code] of sources) {
+    it(`${file} no usa var() de color fuera de los tokens`, () => {
+      const vars = code.match(/var\(--[a-z0-9-]+\)/g) ?? []
+      for (const usada of vars) {
+        expect(usada).toMatch(/^var\(--(color|shadow)-/)
+      }
+    })
+  }
+
   for (const [file, code] of sources) {
     it(`${file} no usa colores hex`, () => {
       expect(HEX.test(code)).toBe(false)

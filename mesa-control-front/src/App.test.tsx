@@ -30,8 +30,10 @@ describe('App', () => {
     })
     render(<App />)
     expect(
-      await screen.findByRole('heading', { name: 'Mesa de Control', level: 1 }),
+      await screen.findByRole('heading', { name: 'Monitor Diario', level: 1 }),
     ).toBeInTheDocument()
-    expect(screen.getByRole('table')).toBeInTheDocument()
+    expect(
+      await screen.findByRole('table', { name: /resumen por operador/i }),
+    ).toBeInTheDocument()
   })
 })
