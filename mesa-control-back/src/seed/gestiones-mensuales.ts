@@ -226,6 +226,17 @@ export function construirMesDemo(
   }
   const afinidad = construirAfinidades(rnd);
 
+  // Reparto por operador con relieve. Va en un PRNG propio (también sembrado
+  // por el periodo) para no alterar la secuencia de motivo/zona/fecha: los
+  // KPIs, la serie y el heatmap quedan idénticos a la Revisión 1.
+  const rndOp = prng(semillaDe(mes.periodo) ^ 0x9e3779b9);
+  // Peso de volumen distinto por operador: unos pocos concentran más gestiones.
+  const pesoVolumen = operadorIds.map(() => 1 + rndOp() * 4);
+  // Fuerza de resolución: sesga a quién se atribuyen los SOLUCIONADO_MESA sin
+  // cambiar su total. Operadores "fuertes" reciben más resueltos y menos resto,
+  // así la eficiencia por operador varía de forma visible.
+  const fuerza = operadorIds.map(() => 0.5 + rndOp() * 1.5);
+
   const motivos = [...MOTIVOS_HEATMAP, ...MOTIVOS_COLA];
   const pesoMotivo = motivos.map((_, i) =>
     i < MOTIVOS_HEATMAP.length ? PESO_HEATMAP : PESO_COLA,
@@ -250,9 +261,16 @@ export function construirMesDemo(
       fecha.getTime() + INICIO_JORNADA_UTC_MS + Math.floor(rnd() * JORNADA_MS),
     );
 
+    // Los resueltos se sesgan hacia los operadores fuertes; el resto, al revés.
+    const esResuelto = resultado === 'SOLUCIONADO_MESA';
+    const pesosOperador = operadorIds.map((_, o) =>
+      esResuelto ? pesoVolumen[o] * fuerza[o] : pesoVolumen[o] / fuerza[o],
+    );
+    const operadorId = operadorIds[elegirPonderado(pesosOperador, rndOp())];
+
     return {
       id: `mensual-${mes.periodo}-${String(i).padStart(4, '0')}`,
-      operadorId: operadorIds[i % operadorIds.length],
+      operadorId,
       resultado,
       motivo,
       ubicacion,

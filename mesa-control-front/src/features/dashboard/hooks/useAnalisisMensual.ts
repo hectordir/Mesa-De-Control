@@ -20,6 +20,9 @@ export function vacioMensual(periodo: string): AnalisisMensualResponse {
     },
     serie: [],
     heatmap: { motivos: [], zonas: [] },
+    distribucion: [],
+    operadores: [],
+    tendencia: [],
   }
 }
 

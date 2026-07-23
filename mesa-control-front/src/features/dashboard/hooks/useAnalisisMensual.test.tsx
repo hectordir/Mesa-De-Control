@@ -23,6 +23,11 @@ const RESPUESTA: AnalisisMensualResponse = {
   kpis: { volumen: 485, resueltos: 209, escalados: 22, metaEfectividad: 65 },
   serie: [{ mes: 'Mayo', periodo: '2026-05', resueltas: 209, resto: 276 }],
   heatmap: { motivos: ['Falla LOS'], zonas: [{ zona: 'Macuto', valores: [3] }] },
+  distribucion: [{ motivo: 'Falla LOS', total: 140 }],
+  operadores: [
+    { id: 'o1', nombre: 'José V.', solucionados: 79, enviadosN2: 67, total: 159 },
+  ],
+  tendencia: [{ fecha: '2026-05-20', atendidos: 40 }],
 }
 
 beforeEach(() => {

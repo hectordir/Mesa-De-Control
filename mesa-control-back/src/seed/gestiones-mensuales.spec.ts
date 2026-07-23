@@ -194,6 +194,49 @@ describe('construirMesDemo', () => {
   it('un mes de volumen 0 no genera gestiones', () => {
     expect(construirMesDemo({ ...MES, volumen: 0 }, OPERADORES)).toEqual([]);
   });
+
+  describe('reparto por operador con relieve', () => {
+    const eficiencia = (op: string) => {
+      const suyas = gestiones.filter((g) => g.operadorId === op);
+      const mesa = suyas.filter(
+        (g) => g.resultado === 'SOLUCIONADO_MESA',
+      ).length;
+      return suyas.length === 0 ? 0 : mesa / suyas.length;
+    };
+
+    it('da a los operadores volúmenes claramente distintos (no round-robin plano)', () => {
+      const porOperador = cuenta(gestiones, (g) => g.operadorId);
+      const volumenes = Object.values(porOperador);
+
+      expect(volumenes).toHaveLength(OPERADORES.length);
+      // Round-robin dejaba ~280 a cada uno; ahora unos concentran mucho más.
+      expect(Math.max(...volumenes)).toBeGreaterThan(
+        1.5 * Math.min(...volumenes),
+      );
+    });
+
+    it('la eficiencia (SOLUCIONADO_MESA / total) varía entre operadores', () => {
+      const efics = OPERADORES.map(eficiencia);
+      const spread = Math.max(...efics) - Math.min(...efics);
+
+      // Con round-robin todas rondaban 0.43; ahora hay dispersión visible.
+      expect(spread).toBeGreaterThan(0.1);
+    });
+
+    it('el reparto por operador es determinista', () => {
+      const otra = construirMesDemo(MES, OPERADORES);
+      expect(otra.map((g) => g.operadorId)).toEqual(
+        gestiones.map((g) => g.operadorId),
+      );
+    });
+
+    it('no altera la efectividad global del mes', () => {
+      const mesa = gestiones.filter(
+        (g) => g.resultado === 'SOLUCIONADO_MESA',
+      ).length;
+      expect(mesa / gestiones.length).toBeCloseTo(0.43, 2);
+    });
+  });
 });
 
 describe('construirGestionesMensuales', () => {

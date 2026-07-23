@@ -19,12 +19,30 @@ interface Analisis {
   kpis: Record<string, number>;
   serie: { mes: string; periodo: string; resueltas: number; resto: number }[];
   heatmap: { motivos: string[]; zonas: { zona: string; valores: number[] }[] };
+  distribucion: { motivo: string; total: number }[];
+  operadores: {
+    id: string;
+    nombre: string;
+    solucionados: number;
+    enviadosN2: number;
+    total: number;
+  }[];
+  tendencia: { fecha: string; atendidos: number }[];
 }
 
 const count = (n: number) => ({ _count: { _all: n } });
 const dia = (fecha: string, resultado: string, n: number) => ({
   fecha: new Date(`${fecha}T00:00:00.000Z`),
   resultado,
+  ...count(n),
+});
+const op = (operadorId: string, resultado: string, n: number) => ({
+  operadorId,
+  resultado,
+  ...count(n),
+});
+const fdia = (fecha: string, n: number) => ({
+  fecha: new Date(`${fecha}T00:00:00.000Z`),
   ...count(n),
 });
 
@@ -57,7 +75,28 @@ const CON_DATOS = {
     { ubicacion: 'Macuto', motivo: 'No Navega', ...count(2) },
     { ubicacion: 'Canaima', motivo: 'Sin Internet', ...count(5) },
   ],
+  distribucion: [
+    { motivo: 'Falla LOS', ...count(120) },
+    { motivo: 'Internet Lento', ...count(95) },
+    { motivo: 'Sin Internet', ...count(80) },
+    { motivo: 'Usuario Clave GNT', ...count(60) },
+    { motivo: 'Caídas Seguidas', ...count(45) },
+    { motivo: 'No Navega', ...count(40) },
+    { motivo: 'WiFi intermitente', ...count(30) },
+  ],
+  porOperador: [
+    op('op-a', 'SOLUCIONADO_MESA', 79),
+    op('op-a', 'ENVIADO_SOPORTE2', 67),
+    op('op-b', 'SOLUCIONADO_MESA', 40),
+    op('op-b', 'ENVIADO_SOPORTE2', 10),
+  ],
+  porFecha: [fdia('2026-05-20', 40), fdia('2026-05-21', 33)],
 };
+
+const USUARIOS = [
+  { id: 'op-a', name: 'José V.' },
+  { id: 'op-b', name: 'María P.' },
+];
 
 describe('Dashboard · análisis mensual (e2e)', () => {
   let app: INestApplication<App>;
@@ -72,9 +111,16 @@ describe('Dashboard · análisis mensual (e2e)', () => {
       if (key === 'fecha+resultado')
         return Promise.resolve(fixture.porDia ?? []);
       if (key === 'motivo')
-        return Promise.resolve((fixture.porMotivo ?? []).slice(0, args.take));
+        return Promise.resolve(
+          args.take
+            ? (fixture.porMotivo ?? []).slice(0, args.take)
+            : (fixture.distribucion ?? []),
+        );
       if (key === 'ubicacion+motivo')
         return Promise.resolve(fixture.porZona ?? []);
+      if (key === 'operadorId+resultado')
+        return Promise.resolve(fixture.porOperador ?? []);
+      if (key === 'fecha') return Promise.resolve(fixture.porFecha ?? []);
       throw new Error(`groupBy inesperado: ${key}`);
     });
   };
@@ -97,7 +143,7 @@ describe('Dashboard · análisis mensual (e2e)', () => {
       .useValue({
         user: {
           findUnique: jest.fn().mockResolvedValue(user),
-          findMany: jest.fn().mockResolvedValue([]),
+          findMany: jest.fn().mockResolvedValue(USUARIOS),
         },
         gestion: { groupBy, findMany: jest.fn().mockResolvedValue([]) },
       })
@@ -144,10 +190,13 @@ describe('Dashboard · análisis mensual (e2e)', () => {
     const body = res.body as Analisis;
 
     expect(Object.keys(body).sort()).toEqual([
+      'distribucion',
       'heatmap',
       'kpis',
+      'operadores',
       'periodo',
       'serie',
+      'tendencia',
     ]);
     expect(body.periodo).toBe(PERIODO);
     expect(body.kpis).toEqual({
@@ -174,6 +223,36 @@ describe('Dashboard · análisis mensual (e2e)', () => {
       { zona: 'Canaima', valores: [0, 0, 5, 0, 0, 0] },
       { zona: 'Macuto', valores: [7, 0, 0, 0, 0, 2] },
     ]);
+    // Distribución: TODOS los motivos del mes, orden desc por total.
+    expect(body.distribucion).toEqual([
+      { motivo: 'Falla LOS', total: 120 },
+      { motivo: 'Internet Lento', total: 95 },
+      { motivo: 'Sin Internet', total: 80 },
+      { motivo: 'Usuario Clave GNT', total: 60 },
+      { motivo: 'Caídas Seguidas', total: 45 },
+      { motivo: 'No Navega', total: 40 },
+      { motivo: 'WiFi intermitente', total: 30 },
+    ]);
+    expect(body.operadores).toEqual([
+      {
+        id: 'op-a',
+        nombre: 'José V.',
+        solucionados: 79,
+        enviadosN2: 67,
+        total: 146,
+      },
+      {
+        id: 'op-b',
+        nombre: 'María P.',
+        solucionados: 40,
+        enviadosN2: 10,
+        total: 50,
+      },
+    ]);
+    expect(body.tendencia).toEqual([
+      { fecha: '2026-05-20', atendidos: 40 },
+      { fecha: '2026-05-21', atendidos: 33 },
+    ]);
   });
 
   it('200 con estado vacío (no 404) en un mes sin gestiones', async () => {
@@ -187,6 +266,9 @@ describe('Dashboard · análisis mensual (e2e)', () => {
       metaEfectividad: 65,
     });
     expect(body.heatmap).toEqual({ motivos: [], zonas: [] });
+    expect(body.distribucion).toEqual([]);
+    expect(body.operadores).toEqual([]);
+    expect(body.tendencia).toEqual([]);
     expect(body.serie).toHaveLength(4);
     expect(body.serie.every((b) => b.resueltas === 0 && b.resto === 0)).toBe(
       true,

@@ -41,6 +41,9 @@
   --color-map-bg: #0C1220;
   --color-map-grid: #1A2438;
 
+  /* medalla de bronce del podio (sin equivalente semántico) */
+  --color-bronze: #B08D57;
+
   /* elevation */
   --shadow-elevation: 0 1px 2px rgba(0, 0, 0, .4);
 }
@@ -79,6 +82,9 @@
   /* map */
   --color-map-bg: #EEF2F8;
   --color-map-grid: #DCE3EE;
+
+  /* medalla de bronce del podio (sin equivalente semántico) */
+  --color-bronze: #A87B45;
 
   /* elevation */
   --shadow-elevation: 0 1px 2px rgba(16, 24, 40, .06), 0 1px 3px rgba(16, 24, 40, .08);

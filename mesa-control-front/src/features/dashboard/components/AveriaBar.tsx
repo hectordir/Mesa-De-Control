@@ -4,16 +4,21 @@ import { anchoBarra } from '../derive'
 export interface AveriaBarProps {
   averia: AveriaItem
   maximo: number
+  /** Sufijo del valor (p. ej. `%`); vacío por defecto. */
+  sufijo?: string
 }
 
-export function AveriaBar({ averia, maximo }: AveriaBarProps) {
+export function AveriaBar({ averia, maximo, sufijo = '' }: AveriaBarProps) {
   const ancho = anchoBarra(averia.total, maximo)
 
   return (
     <div className="flex flex-col gap-[6px]">
       <div className="flex items-center justify-between text-[13px]">
         <span className="text-text-secondary">{averia.motivo}</span>
-        <span className="tabular font-bold text-text-primary">{averia.total}</span>
+        <span className="tabular font-bold text-text-primary">
+          {averia.total}
+          {sufijo}
+        </span>
       </div>
       <div
         role="meter"

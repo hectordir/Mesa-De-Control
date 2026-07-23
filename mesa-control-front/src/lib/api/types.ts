@@ -107,6 +107,32 @@ export interface AnalisisMensualHeatmap {
   zonas: { zona: string; valores: number[] }[]
 }
 
+/** Un motivo con su volumen de gestiones en el mes. */
+export interface AnalisisMensualMotivo {
+  motivo: string
+  /** Gestiones del mes con ese motivo. */
+  total: number
+}
+
+/** Productividad de un operador en el mes. */
+export interface AnalisisMensualOperador {
+  id: string
+  nombre: string
+  /** resultado = SOLUCIONADO_MESA */
+  solucionados: number
+  /** resultado = ENVIADO_SOPORTE2 (Nivel 2) */
+  enviadosN2: number
+  /** Todas las gestiones del operador en el mes. */
+  total: number
+}
+
+/** Gestiones atendidas en un día concreto del mes. */
+export interface AnalisisMensualDia {
+  /** YYYY-MM-DD */
+  fecha: string
+  atendidos: number
+}
+
 export interface AnalisisMensualResponse {
   /** YYYY-MM */
   periodo: string
@@ -114,6 +140,12 @@ export interface AnalisisMensualResponse {
   /** Últimos 4 meses, en orden cronológico. */
   serie: AnalisisMensualBar[]
   heatmap: AnalisisMensualHeatmap
+  /** Todos los motivos del mes, orden desc por total. */
+  distribucion: AnalisisMensualMotivo[]
+  /** Operadores con gestiones en el mes, orden desc por total. */
+  operadores: AnalisisMensualOperador[]
+  /** Solo días con gestiones, orden cronológico. */
+  tendencia: AnalisisMensualDia[]
 }
 
 /* ── Registro · Nueva Gestión (ver spec `registro-nueva-gestion`, §9) ─────────

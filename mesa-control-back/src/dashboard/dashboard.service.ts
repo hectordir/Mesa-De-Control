@@ -11,8 +11,11 @@ import {
 } from './dto/monitor-diario-resumen.dto';
 import {
   AnalisisMensualBarDto,
+  AnalisisMensualDiaDto,
   AnalisisMensualDto,
   AnalisisMensualHeatmapDto,
+  AnalisisMensualMotivoDto,
+  AnalisisMensualOperadorDto,
 } from './dto/analisis-mensual.dto';
 
 /** Orden fijo de la leyenda del donut: no depende de los datos del día. */
@@ -57,6 +60,7 @@ type ConteoPorResultado = {
 type ConteoPorOperador = ConteoPorResultado & { operadorId: string };
 type ConteoPorMotivo = { motivo: string; _count: { _all: number } };
 type ConteoPorDia = ConteoPorResultado & { fecha: Date };
+type ConteoPorFecha = { fecha: Date; _count: { _all: number } };
 type ConteoPorZona = ConteoPorMotivo & { ubicacion: string };
 type GestionReciente = {
   id: string;
@@ -252,7 +256,14 @@ export class DashboardService {
       },
     };
 
-    const [porResultado, porDia, topMotivos] = await Promise.all([
+    const [
+      porResultado,
+      porDia,
+      topMotivos,
+      distribucion,
+      porOperador,
+      porDiaTotal,
+    ] = await Promise.all([
       this.prisma.gestion.groupBy({
         by: ['resultado'],
         where: delMes,
@@ -272,6 +283,24 @@ export class DashboardService {
         orderBy: [{ _count: { motivo: 'desc' } }, { motivo: 'asc' }],
         take: TOP_MOTIVOS_MES,
       }) as unknown as Promise<ConteoPorMotivo[]>,
+      // Distribución: TODOS los motivos del mes (sin `take`), desc por _count.
+      this.prisma.gestion.groupBy({
+        by: ['motivo'],
+        where: delMes,
+        _count: { _all: true },
+        orderBy: [{ _count: { motivo: 'desc' } }, { motivo: 'asc' }],
+      }) as unknown as Promise<ConteoPorMotivo[]>,
+      this.prisma.gestion.groupBy({
+        by: ['operadorId', 'resultado'],
+        where: delMes,
+        _count: { _all: true },
+      }) as unknown as Promise<ConteoPorOperador[]>,
+      this.prisma.gestion.groupBy({
+        by: ['fecha'],
+        where: delMes,
+        _count: { _all: true },
+        orderBy: { fecha: 'asc' },
+      }) as unknown as Promise<ConteoPorFecha[]>,
     ]);
 
     const motivos = topMotivos.map((m) => m.motivo);
@@ -297,7 +326,68 @@ export class DashboardService {
       },
       serie: DashboardService.serie(mes, porDia),
       heatmap: DashboardService.heatmap(motivos, porZona),
+      distribucion: DashboardService.distribucionMensual(distribucion),
+      operadores: await this.operadoresMensual(porOperador),
+      tendencia: DashboardService.tendencia(porDiaTotal),
     };
+  }
+
+  private static distribucionMensual(
+    filas: ConteoPorMotivo[],
+  ): AnalisisMensualMotivoDto[] {
+    // Ya vienen ordenadas por la base; el orden se reafirma por robustez.
+    return filas
+      .map((f) => ({ motivo: f.motivo, total: f._count._all }))
+      .sort((a, b) => b.total - a.total || a.motivo.localeCompare(b.motivo));
+  }
+
+  private async operadoresMensual(
+    filas: ConteoPorOperador[],
+  ): Promise<AnalisisMensualOperadorDto[]> {
+    if (filas.length === 0) return [];
+
+    const acumulado = new Map<
+      string,
+      Omit<AnalisisMensualOperadorDto, 'nombre'>
+    >();
+    for (const fila of filas) {
+      const actual = acumulado.get(fila.operadorId) ?? {
+        id: fila.operadorId,
+        solucionados: 0,
+        enviadosN2: 0,
+        total: 0,
+      };
+      const n = fila._count._all;
+      actual.total += n;
+      if (fila.resultado === 'SOLUCIONADO_MESA') actual.solucionados += n;
+      if (fila.resultado === 'ENVIADO_SOPORTE2') actual.enviadosN2 += n;
+      acumulado.set(fila.operadorId, actual);
+    }
+
+    const usuarios = await this.prisma.user.findMany({
+      where: { id: { in: [...acumulado.keys()] } },
+      select: { id: true, name: true },
+    });
+    const nombres = new Map(usuarios.map((u) => [u.id, u.name]));
+
+    return [...acumulado.values()]
+      .map(({ id, solucionados, enviadosN2, total }) => ({
+        id,
+        nombre: nombres.get(id) ?? '—',
+        solucionados,
+        enviadosN2,
+        total,
+      }))
+      .sort((a, b) => b.total - a.total || a.nombre.localeCompare(b.nombre));
+  }
+
+  private static tendencia(filas: ConteoPorFecha[]): AnalisisMensualDiaDto[] {
+    return filas
+      .map((f) => ({
+        fecha: f.fecha.toISOString().slice(0, 10),
+        atendidos: f._count._all,
+      }))
+      .sort((a, b) => a.fecha.localeCompare(b.fecha));
   }
 
   private static serie(

@@ -88,3 +88,65 @@ Respuesta — **debe casar exactamente** con `AnalisisMensualResponse` de
 
 - Cambios de schema o migraciones.
 - Seeds de otras pantallas (Historial, Fibex Play): ticket aparte cuando existan esas vistas.
+
+---
+
+# Revisión 2 — Bloque analítico inferior (backend)
+
+**Depende de:** `dashboard-analisis-mensual.md` §R2 (el front fija el contrato). El endpoint
+`GET /dashboard/analisis-mensual` gana **3 campos** en la respuesta. Sigue **sin cambios de schema**:
+todo se agrega en Postgres (`groupBy`) sobre `Gestion`.
+
+## R2.1 Nuevos campos de la respuesta (`AnalisisMensualDto`)
+
+Deben casar exactamente con `AnalisisMensualResponse` del front (§R2.1). Añadir DTOs con
+`@ApiProperty` y calcularlos con nuevas agregaciones **en paralelo** con las existentes:
+
+```jsonc
+{
+  // …periodo, kpis, serie, heatmap ya existentes…
+  "distribucion": [                       // groupBy(['motivo']) del mes, TODOS los motivos, _count desc
+    { "motivo": "Falla LOS", "total": 140 }
+  ],
+  "operadores": [                         // groupBy(['operadorId','resultado']) del mes → por operador
+    { "id": "…", "nombre": "José V.", "solucionados": 79, "enviadosN2": 67, "total": 159 }
+  ],
+  "tendencia": [                          // groupBy(['fecha']) del mes, solo días con gestiones, cronológico
+    { "fecha": "2026-05-20", "atendidos": 40 }
+  ]
+}
+```
+
+- `distribucion`: **todos** los motivos del mes (no el top 6 del heatmap), orden `_count` desc con
+  desempate alfabético. `solucionados`=`SOLUCIONADO_MESA`, `enviadosN2`=`ENVIADO_SOPORTE2`.
+- `operadores`: unir el `groupBy(['operadorId','resultado'])` por operador; resolver `nombre` con un
+  único `user.findMany({ where: { id: { in } } })` (mismo patrón que `monitorDiario`); orden `total`
+  desc, desempate por nombre. Solo operadores con gestiones en el mes.
+- `tendencia`: `groupBy(['fecha'])` acotado al mes; `fecha` como `YYYY-MM-DD` (medianoche UTC de la
+  columna `@db.Date`); ordenar cronológico; incluir solo días con al menos una gestión.
+- Mes sin gestiones → los tres campos `[]` (el front pinta el estado vacío). No 404.
+- Reusar la ventana `delMes` ya calculada; añadir estas agregaciones al `Promise.all` existente.
+
+## R2.2 Seed — distribución por operador con relieve
+
+Hoy `gestiones-mensuales.ts` reparte round-robin (`operadorId: ids[i % n]`): volumen y eficiencia
+quedan casi idénticos entre operadores, y los paneles Top Operadores / Solución-vs-N2 salen planos.
+Ajustar **solo el reparto por operador** (sin tocar volumen mensual, efectividad global, motivos ni
+zonas, para no romper KPIs/serie/heatmap ni sus tests):
+
+- Asignar a cada operador un **peso de volumen** distinto (unos pocos concentran más gestiones),
+  derivado del PRNG ya sembrado por periodo — determinista, nada de `Math.random()`.
+- Que la **eficiencia por operador varíe**: al elegir el operador de cada gestión, sesgar de modo
+  que los `SOLUCIONADO_MESA` no se repartan igual que el resto (p. ej. operadores "fuertes" reciben
+  mayor proporción de resueltos). El total de `SOLUCIONADO_MESA` del mes **no cambia** (lo fija
+  `resultadosDelMes`); solo cambia **a quién** se le atribuye cada resultado.
+- Mantener idempotencia (ids deterministas + `skipDuplicates`) y todos los tests actuales en verde.
+
+## R2.3 Criterios de aceptación (además de §4)
+
+7. La respuesta incluye `distribucion`, `operadores`, `tendencia` con el shape de arriba; mes vacío
+   los deja en `[]`. Unit para cada agregación y e2e que valide su presencia y forma.
+8. Tras el seed, en un mes cerrado: `distribucion` con ≥ 6 motivos, `operadores` con ≥ 4 operadores
+   de **volumen y eficiencia visiblemente distintos**, `tendencia` con una fila por día operado.
+9. Seed idempotente y determinista; KPIs, serie y heatmap **sin cambios** respecto a Revisión 1
+   (sus tests siguen pasando). `lint` + `test` + `test:e2e` verdes.

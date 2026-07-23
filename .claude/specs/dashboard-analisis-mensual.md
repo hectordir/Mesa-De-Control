@@ -123,3 +123,98 @@ Textos exactos de los empty states y de los subtítulos: tomarlos literalmente d
 
 - Endpoint backend `GET /dashboard/analisis-mensual` (ticket aparte: `api-analisis-mensual`).
 - Exportaciones, drill-down por zona, rango de fechas personalizado.
+
+---
+
+# Revisión 2 — Bloque analítico inferior (frontend)
+
+**Diseño fuente actualizado:** `AnalisisMensual.dc.html` del proyecto Claude Design
+`4d9fdaa5-5635-4df5-a0b2-8b0003609c6a` (Claude Design completó la pantalla). Debajo del heatmap
+se añaden **7 paneles**. Todos derivan de datos ya presentes en `Gestion` (operador, resultado,
+motivo, fecha); no hay cambios de schema. Reutilizar al máximo los componentes de Monitor Diario
+(`DonutChart`, `DonutLegend`, `AveriaBar`, `OperatorsPanel`, `PanelStates`).
+
+## R2.1 Contrato de datos (ampliación de `types.ts`)
+
+Se añaden **3 campos** a `AnalisisMensualResponse` (el back los publica en el mismo endpoint):
+
+```ts
+export interface AnalisisMensualMotivo {
+  motivo: string
+  total: number        // gestiones del mes con ese motivo
+}
+export interface AnalisisMensualOperador {
+  id: string
+  nombre: string
+  solucionados: number  // resultado = SOLUCIONADO_MESA
+  enviadosN2: number    // resultado = ENVIADO_SOPORTE2 (Nivel 2)
+  total: number         // todas las gestiones del operador en el mes
+}
+export interface AnalisisMensualDia {
+  fecha: string         // 'YYYY-MM-DD'
+  atendidos: number     // gestiones de ese día
+}
+export interface AnalisisMensualResponse {
+  periodo: string
+  kpis: AnalisisMensualKpis
+  serie: AnalisisMensualBar[]
+  heatmap: AnalisisMensualHeatmap
+  distribucion: AnalisisMensualMotivo[]  // NUEVO — todos los motivos del mes, orden desc por total
+  operadores: AnalisisMensualOperador[]  // NUEVO — operadores con gestiones en el mes, orden desc por total
+  tendencia: AnalisisMensualDia[]        // NUEVO — solo días con gestiones, orden cronológico
+}
+```
+
+- `vacioMensual(periodo)` añade `distribucion: [], operadores: [], tendencia: []`.
+- Un solo campo `distribucion` alimenta **tres** paneles (donut, barras de clientes atendidos,
+  averías recurrentes): son la misma distribución por motivo, presentada distinto.
+- Un solo campo `operadores` alimenta **dos** paneles (Solución vs Nivel 2, Top Operadores).
+
+## R2.2 Paneles (orden vertical, tras `IncidentHeatmap`)
+
+Todos dentro del mismo estado de página: `data` los muestra, `empty` muestra **una** tarjeta
+"Analítica no disponible" (texto literal del diseño), `loading` muestra 2 tarjetas skeleton.
+
+1. **`RequestDistributionPanel`** — "Distribución de Solicitudes". Donut (`conic-gradient` sobre
+   tokens `--c1..--c6`, `--warning/--success/--info/--neutral`, ciclando) + leyenda con `%` por
+   motivo; centro = volumen total del mes. Muestra hasta 9 motivos; si hay más, agrupar el resto
+   como **"Otros"**. Reutilizar `DonutChart`/`DonutLegend` si encajan; si no, componente análogo.
+2. **`AttendedClientsPanel`** — "Total de Clientes Atendidos". Barras verticales (una por motivo,
+   top 9) con eje Y de 5 marcas escalado al máximo, valor encima y tooltip al hover.
+3. **`SolutionVsN2Panel`** (interactivo) + panel de detalle (grid 2fr/1fr):
+   - Izquierda: barras agrupadas Solucionados (`--brand`) vs Enviados N2 (`--c3`) por operador
+     (top 6 por total). Click en barra o etiqueta selecciona; el resto baja a `opacity:.4`.
+   - Derecha: sin selección → empty "Selecciona un operador…"; con selección → nombre, total,
+     3 métricas (Solucionados, Enviados N2, Tasa solución = `round(sol/(sol+n2)*100)%`) y una
+     barra de proporción. Estado de selección local (`useState`), no en la URL.
+4. **Encabezado de sección "Monitoreo de Flujo Diario"** (barra de acento + título 18px).
+5. **`AttentionTrendPanel`** — "Tendencia de Atención Mensual". Área + línea SVG de `tendencia`
+   (grid horizontal de 5 marcas, eje Y escalado al máximo "bonito", puntos por día, eje X con las
+   fechas `dd/MM`). Grid `2fr/1fr` junto a:
+6. **`DailyBreakdownPanel`** — "Desglose de Cantidades". Tabla scrollable (`Fecha` / `Atendidos`)
+   con header sticky; una fila por día de `tendencia`, el conteo como "pill" de acento.
+7. Grid `1fr/1fr` con:
+   - **`TopOperatorsPanel`** — "Top Operadores del Mes". Ranking por **`total` desc** (top 5);
+     medalla por puesto (`--warning` #1, `--text-secondary` #2, `#B08D57` #3, `--text-muted` resto),
+     `total` gestiones y eficiencia = `round(solucionados/total*100)%`.
+   - **`RecurringFailuresPanel`** — "Averías Recurrentes". Top-5 de `distribucion` como barras de
+     progreso con `%` sobre el total del mes (reutilizar `AveriaBar`).
+
+## R2.3 Derivaciones puras (añadir a `analisis-mensual.derive.ts`, con tests)
+
+- `buildDistribucion(motivos, { max = 9 })` → `{ label, total, pct, color }[]` con "Otros" si
+  sobran; `pct` entero que **suma 100** (repartir el redondeo en el mayor). `donutBg` conic-gradient.
+- `buildAtendidos(motivos, { max = 9 })` → barras con `px` sobre alto fijo y `ticks` (máx "bonito").
+- `buildOperadores(operadores)` → orden desc por `total`; para Solución-vs-N2, `solPx`/`n2Px` sobre
+  un máximo común; para Top, `eficiencia` y `medal`.
+- `buildTendencia(dias)` → `linePts`/`areaPts`/`dots`/`grid` (viewBox `0 0 940 250`, y escalado al
+  máximo bonito de `atendidos`), etiquetas `dd/MM` y filas de tabla `{ fecha, atendidos }`.
+- Reusar `fmt` (`es-VE`). Cero colores hardcodeados salvo `#B08D57` (bronce, no hay token): si
+  molesta a `tokens-only.test`, exceptuar ese panel o añadir token `--bronze`.
+
+## R2.4 Criterios de aceptación (además de los de §7)
+
+9. Con datos: los 7 paneles renderizan con los valores del endpoint. La suma de `%` del donut = 100.
+10. Solución vs Nivel 2: click en un operador muestra su detalle; volver a click deselecciona.
+11. `empty` muestra la tarjeta "Analítica no disponible"; `loading` sus skeletons. Nunca error rojo.
+12. Tema claro/oscuro solo con tokens. `lint` + `test` + `build` verdes; tests existentes intactos.

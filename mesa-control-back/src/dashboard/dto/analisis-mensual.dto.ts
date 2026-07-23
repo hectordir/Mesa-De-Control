@@ -60,6 +60,48 @@ export class AnalisisMensualHeatmapDto {
   zonas!: AnalisisMensualZonaDto[];
 }
 
+export class AnalisisMensualMotivoDto {
+  @ApiProperty({ example: 'Falla LOS' })
+  motivo!: string;
+
+  @ApiProperty({
+    example: 140,
+    description: 'Gestiones del mes con ese motivo',
+  })
+  total!: number;
+}
+
+export class AnalisisMensualOperadorDto {
+  @ApiProperty({ example: 'u-1' })
+  id!: string;
+
+  @ApiProperty({ example: 'José V.' })
+  nombre!: string;
+
+  @ApiProperty({ example: 79, description: 'resultado = SOLUCIONADO_MESA' })
+  solucionados!: number;
+
+  @ApiProperty({
+    example: 67,
+    description: 'resultado = ENVIADO_SOPORTE2 (Nivel 2)',
+  })
+  enviadosN2!: number;
+
+  @ApiProperty({
+    example: 159,
+    description: 'Todas las gestiones del operador en el mes',
+  })
+  total!: number;
+}
+
+export class AnalisisMensualDiaDto {
+  @ApiProperty({ example: '2026-05-20', description: 'YYYY-MM-DD' })
+  fecha!: string;
+
+  @ApiProperty({ example: 40, description: 'Gestiones de ese día' })
+  atendidos!: number;
+}
+
 export class AnalisisMensualDto {
   @ApiProperty({ example: '2026-05', description: 'Mes consultado (YYYY-MM)' })
   periodo!: string;
@@ -76,4 +118,24 @@ export class AnalisisMensualDto {
 
   @ApiProperty({ type: AnalisisMensualHeatmapDto })
   heatmap!: AnalisisMensualHeatmapDto;
+
+  @ApiProperty({
+    type: [AnalisisMensualMotivoDto],
+    description:
+      'Todos los motivos del mes, orden desc por total (desempate alfabético)',
+  })
+  distribucion!: AnalisisMensualMotivoDto[];
+
+  @ApiProperty({
+    type: [AnalisisMensualOperadorDto],
+    description:
+      'Operadores con gestiones en el mes, orden desc por total (desempate por nombre)',
+  })
+  operadores!: AnalisisMensualOperadorDto[];
+
+  @ApiProperty({
+    type: [AnalisisMensualDiaDto],
+    description: 'Solo días con gestiones, en orden cronológico',
+  })
+  tendencia!: AnalisisMensualDiaDto[];
 }

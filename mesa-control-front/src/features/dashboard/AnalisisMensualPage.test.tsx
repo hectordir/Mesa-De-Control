@@ -34,6 +34,22 @@ const RESPUESTA_CON_DATOS: AnalisisMensualResponse = {
       { zona: 'Maiquetía', valores: [3, 0, 2] },
     ],
   },
+  distribucion: [
+    { motivo: 'Falla LOS', total: 140 },
+    { motivo: 'Usuario Clave ONT', total: 118 },
+    { motivo: 'Internet Lento', total: 72 },
+    { motivo: 'Sin Internet', total: 64 },
+    { motivo: 'Caídas Seguidas', total: 39 },
+  ],
+  operadores: [
+    { id: 'o1', nombre: 'José V.', solucionados: 79, enviadosN2: 67, total: 159 },
+    { id: 'o2', nombre: 'Keyla G.', solucionados: 42, enviadosN2: 50, total: 97 },
+    { id: 'o3', nombre: 'Thais D.', solucionados: 33, enviadosN2: 44, total: 88 },
+  ],
+  tendencia: [
+    { fecha: '2026-05-20', atendidos: 40 },
+    { fecha: '2026-05-21', atendidos: 80 },
+  ],
 }
 
 const RESPUESTA_VACIA: AnalisisMensualResponse = {
@@ -41,6 +57,9 @@ const RESPUESTA_VACIA: AnalisisMensualResponse = {
   kpis: { volumen: 0, resueltos: 0, escalados: 0, metaEfectividad: 65 },
   serie: [],
   heatmap: { motivos: [], zonas: [] },
+  distribucion: [],
+  operadores: [],
+  tendencia: [],
 }
 
 function renderPage() {
@@ -234,6 +253,75 @@ describe('AnalisisMensualPage · estado con datos', () => {
   })
 })
 
+describe('AnalisisMensualPage · bloque analítico', () => {
+  beforeEach(() => {
+    fetchMock.mockResolvedValue(RESPUESTA_CON_DATOS)
+  })
+
+  it('renderiza los siete paneles y el encabezado de flujo diario', async () => {
+    renderPage()
+    await screen.findByRole('table', { name: /heatmap mensual/i })
+
+    for (const titulo of [
+      'Distribución de Solicitudes',
+      'Total de Clientes Atendidos',
+      'Solución vs Nivel 2',
+      'Tendencia de Atención Mensual',
+      'Desglose de Cantidades',
+      'Top Operadores del Mes',
+      'Averías Recurrentes',
+    ]) {
+      expect(panel(titulo)).toBeInTheDocument()
+    }
+    expect(
+      screen.getByRole('heading', { name: 'Monitoreo de Flujo Diario', level: 2 }),
+    ).toBeInTheDocument()
+  })
+
+  it('el donut muestra el volumen total y porcentajes que suman 100', async () => {
+    renderPage()
+    await screen.findByRole('table', { name: /heatmap mensual/i })
+    const donut = panel('Distribución de Solicitudes')
+
+    expect(within(donut).getByText('485')).toBeInTheDocument()
+    // 140+118+72+64+39 = 433 → 32/27/17/15/9 = 100
+    for (const pct of ['32%', '27%', '17%', '15%', '9%']) {
+      expect(within(donut).getByText(pct)).toBeInTheDocument()
+    }
+  })
+
+  it('Solución vs Nivel 2: seleccionar un operador abre su detalle y re-click lo cierra', async () => {
+    renderPage()
+    await screen.findByRole('table', { name: /heatmap mensual/i })
+    const izquierda = panel('Solución vs Nivel 2')
+
+    expect(
+      screen.getByText(
+        'Selecciona un operador a la izquierda para inspeccionar',
+      ),
+    ).toBeInTheDocument()
+
+    await userEvent.click(
+      within(izquierda).getByRole('button', { name: 'José V.' }),
+    )
+
+    expect(screen.getByText('159 gestiones en total')).toBeInTheDocument()
+    expect(screen.getByText('79')).toBeInTheDocument()
+    expect(screen.getByText('67')).toBeInTheDocument()
+    expect(screen.getByText('54%')).toBeInTheDocument()
+
+    await userEvent.click(
+      within(izquierda).getByRole('button', { name: 'José V.' }),
+    )
+    expect(
+      screen.getByText(
+        'Selecciona un operador a la izquierda para inspeccionar',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByText('159 gestiones en total')).not.toBeInTheDocument()
+  })
+})
+
 describe('AnalisisMensualPage · estado de carga', () => {
   it('muestra esqueletos y ningún valor', async () => {
     fetchMock.mockImplementation(() => new Promise(() => {}))
@@ -282,6 +370,16 @@ describe('AnalisisMensualPage · estado vacío', () => {
       expect(await screen.findByText(texto)).toBeInTheDocument()
     }
     expect(screen.queryByRole('table')).not.toBeInTheDocument()
+  })
+
+  it('el bloque analítico degrada a una tarjeta "Analítica no disponible"', async () => {
+    renderPage()
+    expect(
+      await screen.findByRole('region', { name: 'Analítica no disponible' }),
+    ).toBeInTheDocument()
+    expect(
+      screen.queryByRole('region', { name: 'Distribución de Solicitudes' }),
+    ).not.toBeInTheDocument()
   })
 })
 

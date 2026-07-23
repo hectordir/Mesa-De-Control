@@ -4,6 +4,7 @@ import {
   efectividad,
   fmt,
 } from './analisis-mensual.derive'
+import { AnalyticsBlock } from './components/AnalyticsBlock'
 import { AppTopBar } from './components/AppTopBar'
 import { DashboardViewToggle } from './components/DashboardViewToggle'
 import { EffectivenessKpiCard } from './components/EffectivenessKpiCard'
@@ -97,6 +98,7 @@ export default function AnalisisMensualPage() {
 
           <MonthlyBarChart chart={chart} estado={estado} />
           <IncidentHeatmap heatmap={heatmap} estado={estado} />
+          <AnalyticsBlock resumen={resumen} estado={estado} />
         </>
       )}
     </div>

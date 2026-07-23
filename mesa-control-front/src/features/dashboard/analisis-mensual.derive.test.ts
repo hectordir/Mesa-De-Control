@@ -1,13 +1,23 @@
 import { describe, expect, it } from 'vitest'
 import {
+  buildAtendidos,
   buildChart,
+  buildDistribucion,
   buildHeatmap,
+  buildOperadores,
+  buildTendencia,
   efectividad,
   filterZones,
   fmt,
   metaStatus,
 } from './analisis-mensual.derive'
-import type { AnalisisMensualBar, AnalisisMensualHeatmap } from '../../lib/api/types'
+import type {
+  AnalisisMensualBar,
+  AnalisisMensualDia,
+  AnalisisMensualHeatmap,
+  AnalisisMensualMotivo,
+  AnalisisMensualOperador,
+} from '../../lib/api/types'
 
 /** Serie del diseño: Febrero–Mayo. */
 const SERIE: AnalisisMensualBar[] = [
@@ -154,5 +164,128 @@ describe('fmt', () => {
   it('formatea en es-VE', () => {
     expect(fmt(1350)).toBe('1.350')
     expect(fmt(0)).toBe('0')
+  })
+})
+
+const motivos = (...pares: Array<[string, number]>): AnalisisMensualMotivo[] =>
+  pares.map(([motivo, total]) => ({ motivo, total }))
+
+describe('buildDistribucion', () => {
+  it('calcula porcentajes enteros que suman 100 y cicla colores por token', () => {
+    const dist = buildDistribucion(motivos(['A', 50], ['B', 30], ['C', 20]))
+    expect(dist.map((d) => d.pct)).toEqual([50, 30, 20])
+    expect(dist.map((d) => d.color)).toEqual([
+      'var(--color-cat-1)',
+      'var(--color-cat-2)',
+      'var(--color-cat-3)',
+    ])
+    expect(dist.reduce((a, d) => a + d.pct, 0)).toBe(100)
+  })
+
+  it('reparte el redondeo en el motivo mayor para cuadrar en 100', () => {
+    const dist = buildDistribucion(motivos(['A', 7], ['B', 7], ['C', 7]))
+    expect(dist.map((d) => d.pct)).toEqual([34, 33, 33])
+    expect(dist.reduce((a, d) => a + d.pct, 0)).toBe(100)
+  })
+
+  it('agrupa el resto en "Otros" cuando hay más de 9 motivos', () => {
+    const many = motivos(
+      ['A', 10], ['B', 9], ['C', 8], ['D', 7], ['E', 6],
+      ['F', 5], ['G', 4], ['H', 3], ['I', 2], ['J', 1],
+    )
+    const dist = buildDistribucion(many)
+    expect(dist).toHaveLength(9)
+    expect(dist[8]).toMatchObject({ label: 'Otros', total: 3 })
+    expect(dist.reduce((a, d) => a + d.pct, 0)).toBe(100)
+  })
+})
+
+describe('buildAtendidos', () => {
+  it('escala barras a un techo bonito con 5 marcas y cicla colores', () => {
+    const { barras, ticks, yMax } = buildAtendidos(
+      motivos(['A', 140], ['B', 70], ['C', 35]),
+    )
+    expect(yMax).toBe(160)
+    expect(ticks.map((t) => t.value)).toEqual([0, 40, 80, 120, 160])
+    expect(barras[0]).toMatchObject({ label: 'A', total: 140, color: 'var(--color-cat-1)' })
+    expect(barras[0].px).toBe(Math.round((140 / 160) * 230))
+  })
+
+  it('recorta a un máximo de 9 barras', () => {
+    const many = Array.from({ length: 12 }, (_, i): [string, number] => [
+      `M${i}`,
+      12 - i,
+    ])
+    expect(buildAtendidos(motivos(...many)).barras).toHaveLength(9)
+  })
+})
+
+const ops = (
+  ...t: Array<[string, number, number, number]>
+): AnalisisMensualOperador[] =>
+  t.map(([nombre, solucionados, enviadosN2, total], i) => ({
+    id: `o${i}`,
+    nombre,
+    solucionados,
+    enviadosN2,
+    total,
+  }))
+
+describe('buildOperadores', () => {
+  it('ordena por total desc y calcula tasa y píxeles sobre un máximo común', () => {
+    const { barras } = buildOperadores(
+      ops(['Ana', 20, 20, 60], ['Beto', 40, 40, 100]),
+    )
+    expect(barras.map((b) => b.nombre)).toEqual(['Beto', 'Ana'])
+    // máximo común = 40 → techo bonito 40, alto 210
+    expect(barras[0].solPx).toBe(210)
+    expect(barras[0].tasa).toBe(50)
+  })
+
+  it('el top asigna medalla por puesto y calcula eficiencia', () => {
+    const { top } = buildOperadores(
+      ops(
+        ['Ana', 50, 10, 100], ['Beto', 30, 10, 80], ['Cira', 20, 20, 60],
+        ['Dan', 10, 10, 40], ['Eva', 5, 5, 20], ['Fito', 1, 1, 10],
+      ),
+    )
+    expect(top).toHaveLength(5)
+    expect(top[0]).toMatchObject({ rank: 1, eficiencia: 50, medal: 'var(--color-warning)' })
+    expect(top[1].medal).toBe('var(--color-text-secondary)')
+    expect(top[2].medal).toBe('var(--color-bronze)')
+    expect(top[3].medal).toBe('var(--color-text-muted)')
+  })
+})
+
+describe('buildTendencia', () => {
+  const dias: AnalisisMensualDia[] = [
+    { fecha: '2026-05-20', atendidos: 40 },
+    { fecha: '2026-05-21', atendidos: 80 },
+  ]
+
+  it('proyecta puntos, área, rejilla y etiquetas dd/MM', () => {
+    const t = buildTendencia(dias)
+    expect(t.yMax).toBe(80)
+    expect(t.dots).toEqual([
+      { cx: 0, cy: 125 },
+      { cx: 940, cy: 0 },
+    ])
+    expect(t.linePts).toBe('0,125 940,0')
+    expect(t.areaPts).toBe('0,250 0,125 940,0 940,250')
+    expect(t.labels).toEqual(['20/05', '21/05'])
+    expect(t.filas).toEqual(dias)
+    expect(t.grid.map((g) => g.label)).toEqual(['0', '20', '40', '60', '80'])
+  })
+
+  it('sin días devuelve una tendencia vacía', () => {
+    expect(buildTendencia([])).toEqual({
+      linePts: '',
+      areaPts: '',
+      dots: [],
+      grid: [],
+      labels: [],
+      filas: [],
+      yMax: 0,
+    })
   })
 })

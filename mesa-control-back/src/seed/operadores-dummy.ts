@@ -16,14 +16,29 @@ export const OPERADORES_DUMMY: OperadorDummy[] = [
   { email: 'genesis.marquez@fibex.com', name: 'Génesis Márquez' },
 ];
 
+/**
+ * Argumentos exactos del `upsert` de operador. Al describir la forma concreta que
+ * se envía (en vez de `Record<string, unknown>`), este tipo es a la vez un
+ * `Prisma.UserUpsertArgs` válido —así el `PrismaClient` real es asignable a
+ * `UserUpsertClient` bajo `strictFunctionTypes`— y encaja con el mock laxo del
+ * test unitario, que solo lee `where.email`, `create.role`, etc.
+ */
+export interface OperadorUpsertArgs {
+  where: { email: string };
+  update: { name: string; role: 'OPERADOR'; isActive: boolean };
+  create: {
+    email: string;
+    name: string;
+    role: 'OPERADOR';
+    isActive: boolean;
+    passwordHash: string;
+  };
+}
+
 /** Contrato mínimo de Prisma que necesita el sembrado (facilita el test unitario). */
 export interface UserUpsertClient {
   user: {
-    upsert(args: {
-      where: { email: string };
-      update: Record<string, unknown>;
-      create: Record<string, unknown>;
-    }): Promise<{ id: string }>;
+    upsert(args: OperadorUpsertArgs): Promise<{ id: string }>;
   };
 }
 

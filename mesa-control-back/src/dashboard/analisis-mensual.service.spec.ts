@@ -11,10 +11,18 @@ interface Fixture {
   porResultado?: CountRow[];
   /** groupBy(['fecha', 'resultado']) de la ventana de 4 meses. */
   porDia?: CountRow[];
-  /** groupBy(['motivo']) del mes, ya ordenado desc por la base. */
+  /** groupBy(['motivo']) del mes con `take` → top del heatmap. */
   porMotivo?: CountRow[];
+  /** groupBy(['motivo']) del mes SIN `take` → distribución completa. */
+  distribucion?: CountRow[];
   /** groupBy(['ubicacion', 'motivo']) del mes. */
   porZona?: CountRow[];
+  /** groupBy(['operadorId', 'resultado']) del mes. */
+  porOperador?: CountRow[];
+  /** groupBy(['fecha']) del mes → tendencia diaria. */
+  porFecha?: CountRow[];
+  /** Usuarios para resolver el nombre del operador. */
+  usuarios?: { id: string; name: string }[];
 }
 
 const count = (n: number) => ({ _count: { _all: n } });
@@ -28,10 +36,20 @@ const celda = (ubicacion: string, motivo: string, n: number) => ({
   motivo,
   ...count(n),
 });
+const op = (operadorId: string, resultado: string, n: number) => ({
+  operadorId,
+  resultado,
+  ...count(n),
+});
+const fdia = (fecha: string, n: number) => ({
+  fecha: new Date(`${fecha}T00:00:00.000Z`),
+  ...count(n),
+});
 
 describe('DashboardService · analisisMensual', () => {
   let service: DashboardService;
   let groupBy: jest.Mock;
+  let userFindMany: jest.Mock;
 
   const setup = async (fixture: Fixture) => {
     groupBy = jest.fn((args: GroupByArgs) => {
@@ -40,12 +58,21 @@ describe('DashboardService · analisisMensual', () => {
         return Promise.resolve(fixture.porResultado ?? []);
       if (key === 'fecha+resultado')
         return Promise.resolve(fixture.porDia ?? []);
+      // `take` → top del heatmap; sin `take` → distribución completa.
       if (key === 'motivo')
-        return Promise.resolve((fixture.porMotivo ?? []).slice(0, args.take));
+        return Promise.resolve(
+          args.take
+            ? (fixture.porMotivo ?? []).slice(0, args.take)
+            : (fixture.distribucion ?? fixture.porMotivo ?? []),
+        );
       if (key === 'ubicacion+motivo')
         return Promise.resolve(fixture.porZona ?? []);
+      if (key === 'operadorId+resultado')
+        return Promise.resolve(fixture.porOperador ?? []);
+      if (key === 'fecha') return Promise.resolve(fixture.porFecha ?? []);
       throw new Error(`groupBy inesperado: ${key}`);
     });
+    userFindMany = jest.fn(() => Promise.resolve(fixture.usuarios ?? []));
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -54,7 +81,7 @@ describe('DashboardService · analisisMensual', () => {
           provide: PrismaService,
           useValue: {
             gestion: { groupBy, findMany: jest.fn() },
-            user: { findMany: jest.fn() },
+            user: { findMany: userFindMany },
           },
         },
       ],
@@ -230,6 +257,133 @@ describe('DashboardService · analisisMensual', () => {
         motivos: [],
         zonas: [],
       });
+    });
+  });
+
+  describe('distribucion', () => {
+    it('trae TODOS los motivos del mes (sin take), _count desc y desempate alfabético', async () => {
+      await setup({
+        distribucion: [
+          { motivo: 'Falla LOS', ...count(140) },
+          { motivo: 'Sin Internet', ...count(90) },
+          { motivo: 'No Navega', ...count(90) },
+          { motivo: 'WiFi intermitente', ...count(12) },
+        ],
+      });
+
+      const { distribucion } = await service.analisisMensual('2026-05');
+
+      // La consulta de distribución no lleva `take`.
+      expect(llamada('motivo')).toBeDefined();
+      expect(
+        (groupBy.mock.calls as [GroupByArgs][]).some(
+          (c) => c[0].by.join('+') === 'motivo' && c[0].take === undefined,
+        ),
+      ).toBe(true);
+      expect(distribucion).toEqual([
+        { motivo: 'Falla LOS', total: 140 },
+        { motivo: 'No Navega', total: 90 },
+        { motivo: 'Sin Internet', total: 90 },
+        { motivo: 'WiFi intermitente', total: 12 },
+      ]);
+    });
+
+    it('un mes sin gestiones deja la distribución vacía', async () => {
+      await setup({});
+      expect((await service.analisisMensual('2026-05')).distribucion).toEqual(
+        [],
+      );
+    });
+  });
+
+  describe('operadores', () => {
+    it('agrega por operador (solucionados/enviadosN2/total), resuelve nombre y ordena por total desc', async () => {
+      await setup({
+        porOperador: [
+          op('op-a', 'SOLUCIONADO_MESA', 79),
+          op('op-a', 'ENVIADO_SOPORTE2', 67),
+          op('op-a', 'ESCALADO_NOC', 13),
+          op('op-b', 'SOLUCIONADO_MESA', 40),
+          op('op-b', 'ENVIADO_SOPORTE2', 10),
+        ],
+        usuarios: [
+          { id: 'op-a', name: 'José V.' },
+          { id: 'op-b', name: 'María P.' },
+        ],
+      });
+
+      const { operadores } = await service.analisisMensual('2026-05');
+
+      expect(operadores).toEqual([
+        {
+          id: 'op-a',
+          nombre: 'José V.',
+          solucionados: 79,
+          enviadosN2: 67,
+          total: 159,
+        },
+        {
+          id: 'op-b',
+          nombre: 'María P.',
+          solucionados: 40,
+          enviadosN2: 10,
+          total: 50,
+        },
+      ]);
+      // Un único findMany para todos los operadores del mes.
+      expect(userFindMany).toHaveBeenCalledTimes(1);
+      expect(userFindMany).toHaveBeenCalledWith({
+        where: { id: { in: ['op-a', 'op-b'] } },
+        select: { id: true, name: true },
+      });
+    });
+
+    it('desempata por nombre cuando el total coincide', async () => {
+      await setup({
+        porOperador: [
+          op('op-z', 'SOLUCIONADO_MESA', 30),
+          op('op-a', 'ENVIADO_SOPORTE2', 30),
+        ],
+        usuarios: [
+          { id: 'op-z', name: 'Zoe' },
+          { id: 'op-a', name: 'Ana' },
+        ],
+      });
+
+      const { operadores } = await service.analisisMensual('2026-05');
+      expect(operadores.map((o) => o.nombre)).toEqual(['Ana', 'Zoe']);
+    });
+
+    it('un mes sin gestiones deja operadores vacío y no consulta usuarios', async () => {
+      await setup({});
+      const { operadores } = await service.analisisMensual('2026-05');
+      expect(operadores).toEqual([]);
+      expect(userFindMany).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('tendencia', () => {
+    it('un punto por día con gestiones, fecha YYYY-MM-DD y orden cronológico', async () => {
+      await setup({
+        porFecha: [
+          fdia('2026-05-22', 51),
+          fdia('2026-05-20', 40),
+          fdia('2026-05-21', 33),
+        ],
+      });
+
+      const { tendencia } = await service.analisisMensual('2026-05');
+
+      expect(tendencia).toEqual([
+        { fecha: '2026-05-20', atendidos: 40 },
+        { fecha: '2026-05-21', atendidos: 33 },
+        { fecha: '2026-05-22', atendidos: 51 },
+      ]);
+    });
+
+    it('un mes sin gestiones deja la tendencia vacía', async () => {
+      await setup({});
+      expect((await service.analisisMensual('2026-05')).tendencia).toEqual([]);
     });
   });
 });
