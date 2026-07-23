@@ -29,6 +29,15 @@
   }
 }
 
+@keyframes fx-drawer-in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
 @layer utilities {
   /* Bloque de carga: degradado de bordes recorriendo la pieza. */
   .fx-skeleton {
@@ -45,6 +54,11 @@
   /* Punto "En vivo". */
   .fx-pulse {
     animation: fx-pulse 1.6s infinite;
+  }
+
+  /* Entrada del drawer lateral. */
+  .fx-drawer-in {
+    animation: fx-drawer-in 0.22s ease-out;
   }
 
   /* Cifras alineadas en tablas y KPIs. */
@@ -64,7 +78,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .fx-skeleton,
-    .fx-pulse {
+    .fx-pulse,
+    .fx-drawer-in {
       animation: none;
     }
   }

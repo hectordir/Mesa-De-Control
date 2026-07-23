@@ -3,6 +3,8 @@ import LoginPage from '../features/auth/LoginPage'
 import AnalisisMensualPage from '../features/dashboard/AnalisisMensualPage'
 import NuevaGestionPage from '../features/registro/NuevaGestionPage'
 import DashboardPage from '../pages/DashboardPage'
+import FibexPlayPage from '../pages/FibexPlayPage'
+import FibexPlayGestionPage from '../pages/FibexPlayGestionPage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { RootRedirect } from './RootRedirect'
 
@@ -31,6 +33,22 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute>
         <NuevaGestionPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/fibex-play',
+    element: (
+      <ProtectedRoute>
+        <FibexPlayPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/fibex-play/gestion',
+    element: (
+      <ProtectedRoute>
+        <FibexPlayGestionPage />
       </ProtectedRoute>
     ),
   },

@@ -24,6 +24,41 @@ enum ResultadoGestion {
   REAGENDADO
 }
 
+enum CategoriaCanal {
+  DEPORTES
+  INFANTIL
+  NOTICIAS
+  DOCUMENTALES
+  PREMIUM
+  GENERAL
+  MUSICA
+}
+
+enum EstadoCanal {
+  OPERATIVO
+  CAIDO
+}
+
+enum TipoIncidencia {
+  SIN_SENAL
+  VIDEO_PIXELADO
+  IMAGEN_CONGELADA
+  AUDIO_DESINCRONIZADO
+  SENAL_INTERMITENTE
+}
+
+enum SeveridadIncidencia {
+  CRITICA
+  ALTA
+  MEDIA
+}
+
+enum EstadoAtencion {
+  SOLUCIONADO
+  EN_PROCESO
+  ESCALADO
+}
+
 model User {
   id           String   @id @default(uuid())
   email        String   @unique
@@ -34,7 +69,8 @@ model User {
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
-  gestiones Gestion[]
+  gestiones  Gestion[]
+  atenciones AtencionApp[]
 }
 
 /// Una atención registrada por un operador de la mesa.
@@ -65,4 +101,36 @@ model Gestion {
 
   @@index([fecha])
   @@index([operadorId, fecha])
+}
+
+/// Bitácora de atención a reportes de clientes por la App Fibex (Fibex Play · Gestión).
+model AtencionApp {
+  id         String         @id @default(uuid())
+  operador   User           @relation(fields: [operadorId], references: [id])
+  operadorId String
+  abonado    String // "Número de abonado" (texto: nombre/condominio/nº cuenta)
+  canal      String // valor del catálogo de canales
+  motivo     String // valor del catálogo de motivos
+  solucion   String // valor del catálogo de soluciones
+  estado     EstadoAtencion
+  creadoEn   DateTime       @default(now())
+
+  @@index([estado])
+  @@index([canal])
+}
+
+/// Snapshot en vivo del estado de un canal de la grilla TV/streaming.
+model Canal {
+  id             String               @id @default(uuid())
+  nombre         String
+  categoria      CategoriaCanal
+  estado         EstadoCanal          @default(OPERATIVO)
+  tipoIncidencia TipoIncidencia? // solo si estado = CAIDO
+  severidad      SeveridadIncidencia? // solo si estado = CAIDO
+  detectadoEn    DateTime? // hora de la caída, solo si CAIDO
+  orden          Int                  @default(0) // orden de presentación en la grilla
+  createdAt      DateTime             @default(now())
+  updatedAt      DateTime             @updatedAt
+
+  @@index([estado])
 }

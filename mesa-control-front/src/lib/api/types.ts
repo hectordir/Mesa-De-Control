@@ -206,3 +206,130 @@ export interface GestionResponse {
   /** ISO instante */
   createdAt: string
 }
+
+/* ── Fibex Play · Grilla en Vivo (ver spec `fibex-play-grilla`, §2.3) ─────────
+   Endpoint: GET /fibex-play (JWT). Snapshot en vivo de la grilla de canales.
+   Los enums llegan como strings; el front mapea a etiqueta/color en
+   `features/fibex-play/lib/fibexPlay.presentation.ts`.                        */
+
+export type CategoriaCanal =
+  | 'DEPORTES'
+  | 'INFANTIL'
+  | 'NOTICIAS'
+  | 'DOCUMENTALES'
+  | 'PREMIUM'
+  | 'GENERAL'
+  | 'MUSICA'
+
+export type TipoIncidencia =
+  | 'SIN_SENAL'
+  | 'VIDEO_PIXELADO'
+  | 'IMAGEN_CONGELADA'
+  | 'AUDIO_DESINCRONIZADO'
+  | 'SENAL_INTERMITENTE'
+
+export type SeveridadIncidencia = 'CRITICA' | 'ALTA' | 'MEDIA'
+
+export interface FibexPlayKpis {
+  total: number
+  operativos: number
+  caidos: number
+  /** 0–100, round(operativos/total*100); 100 si total=0. */
+  saludGrilla: number
+}
+
+export interface DistribucionSeveridadItem {
+  severidad: SeveridadIncidencia
+  total: number
+}
+
+/** Canal caído; alimenta Detalles de Falla y el timeline de Novedades. */
+export interface FallaCanal {
+  id: string
+  nombre: string
+  categoria: CategoriaCanal
+  tipoIncidencia: TipoIncidencia
+  severidad: SeveridadIncidencia
+  /** HH:mm derivado de `detectadoEn`. */
+  hora: string
+  /** ISO instante de la caída. */
+  detectadoEn: string
+}
+
+export interface FibexPlayResumen {
+  /** ISO instante (now del servidor). */
+  actualizadoEn: string
+  kpis: FibexPlayKpis
+  /** Solo severidades con total>0, orden Crítica→Alta→Media. */
+  distribucionSeveridad: DistribucionSeveridadItem[]
+  /** Canales CAIDO, orden por `detectadoEn` asc. */
+  fallas: FallaCanal[]
+}
+
+/* ── Fibex Play · Gestión de Clientes (ver spec `fibex-play-gestion`, §2.4) ───
+   Endpoints: GET/POST /fibex-play/gestion (JWT). Bitácora de atención a
+   reportes de la App Fibex. Los estados llegan como strings de enum; el front
+   mapea etiqueta/color en `features/fibex-play/gestion/lib/gestion.presentation.ts`. */
+
+export type EstadoAtencion = 'SOLUCIONADO' | 'EN_PROCESO' | 'ESCALADO'
+
+export interface GestionKpis {
+  totalAtendidos: number
+  solucionados: number
+  enProceso: number
+  escalados: number
+}
+
+/** Canal reportado con su total; el panel dibuja la barra según el máximo. */
+export interface TopCanalItem {
+  canal: string
+  total: number
+}
+
+/** Categoría de origen (derivada del motivo en el back) con su total. */
+export interface OrigenItem {
+  origen: string
+  total: number
+}
+
+/** Registro de la bitácora; `operador` ya viaja resuelto a nombre. */
+export interface RegistroAtencion {
+  id: string
+  operador: string
+  abonado: string
+  canal: string
+  motivo: string
+  solucion: string
+  estado: EstadoAtencion
+  /** ISO instante de creación. */
+  creadoEn: string
+}
+
+/** Catálogos que pueblan los selects del formulario (sin operadores). */
+export interface GestionCatalogos {
+  canales: string[]
+  motivos: string[]
+  soluciones: string[]
+  estados: EstadoAtencion[]
+}
+
+export interface GestionResumen {
+  kpis: GestionKpis
+  /** Desc por total, top 5. */
+  topCanales: TopCanalItem[]
+  /** Por categoría con total>0, orden fijo del catálogo. */
+  origen: OrigenItem[]
+  /** Desc por `creadoEn`. */
+  registros: RegistroAtencion[]
+  catalogos: GestionCatalogos
+}
+
+/** Cuerpo de `POST /fibex-play/gestion`. El front envía valores de catálogo. */
+export interface CrearAtencionPayload {
+  operadorId: string
+  abonado: string
+  canal: string
+  motivo: string
+  solucion: string
+  estado: EstadoAtencion
+}

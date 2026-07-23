@@ -3,6 +3,8 @@ import * as bcrypt from 'bcrypt';
 import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../src/generated/prisma/client';
+import { sembrarAtenciones } from '../src/seed/atenciones';
+import { sembrarCanales } from '../src/seed/canales';
 import { construirGestionesDemo } from '../src/seed/gestiones-demo';
 import { construirGestionesMensuales } from '../src/seed/gestiones-mensuales';
 import { sembrarOperadoresDummy } from '../src/seed/operadores-dummy';
@@ -93,6 +95,27 @@ async function main() {
   );
   console.log(
     `Seed mensual — ${mensuales.length} gestiones generadas · ${nuevasMensuales} nuevas en base`,
+  );
+
+  // Grilla Fibex Play: 165 canales (6 caídos). Idempotente (ids fijos + skipDuplicates).
+  const { count: nuevosCanales } = await sembrarCanales(prisma);
+  const totalCanales = await prisma.canal.count();
+  console.log(
+    `Seed canales — ${nuevosCanales} nuevos · ${totalCanales} canales en base`,
+  );
+
+  // Fibex Play · Gestión: 24 atenciones ligadas a operadores ya sembrados
+  // (por id, buscados por email). Idempotente (ids fijos + skipDuplicates).
+  const operadorIds = usuarios
+    .filter((u) => u.email !== 'operador@fibex.com')
+    .map((u) => u.id);
+  const { count: nuevasAtenciones } = await sembrarAtenciones(
+    prisma,
+    operadorIds,
+  );
+  const totalAtenciones = await prisma.atencionApp.count();
+  console.log(
+    `Seed atenciones — ${nuevasAtenciones} nuevas · ${totalAtenciones} atenciones en base`,
   );
 }
 

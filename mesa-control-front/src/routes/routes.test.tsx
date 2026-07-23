@@ -1,10 +1,23 @@
 import { render, screen } from '@testing-library/react'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createMemoryRouter, RouterProvider } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { routes } from './routes'
 import { useAuthStore } from '../stores/auth.store'
 import { createTestQueryClient } from '../test/renderWithProviders'
+
+// Esta suite solo verifica el MONTAJE (y la protección) de cada ruta, no sus
+// datos. Stubeamos el cliente HTTP para que ninguna petición real quede en
+// vuelo: un 401 tardío de un back en marcha dispararía el logout del
+// interceptor y sacaría al usuario de la vista bajo prueba, contaminando el
+// test siguiente. Las páginas degradan a su estado de carga/vacío.
+vi.mock('../lib/api/client', () => ({
+  API_BASE_URL: 'http://test.local',
+  api: {
+    get: vi.fn(() => new Promise(() => {})),
+    post: vi.fn(() => new Promise(() => {})),
+  },
+}))
 
 function renderAt(path: string) {
   const router = createMemoryRouter(routes, { initialEntries: [path] })
@@ -70,6 +83,39 @@ describe('rutas de la SPA', () => {
 
   it('/dashboard/analisis-mensual sin sesión vuelve a la pantalla de acceso', async () => {
     renderAt('/dashboard/analisis-mensual')
+    expect(
+      await screen.findByRole('button', { name: /Acceder al sistema/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('/fibex-play monta la grilla en vivo con sesión', async () => {
+    useAuthStore.setState(session)
+    renderAt('/fibex-play')
+    expect(
+      await screen.findByRole('heading', { name: 'Fibex Play', level: 1 }),
+    ).toBeInTheDocument()
+  })
+
+  it('/fibex-play sin sesión vuelve a la pantalla de acceso', async () => {
+    renderAt('/fibex-play')
+    expect(
+      await screen.findByRole('button', { name: /Acceder al sistema/i }),
+    ).toBeInTheDocument()
+  })
+
+  it('/fibex-play/gestion monta la gestión de clientes con sesión', async () => {
+    useAuthStore.setState(session)
+    renderAt('/fibex-play/gestion')
+    expect(
+      await screen.findByRole('heading', {
+        name: 'Fibex Play — Gestión de Clientes',
+        level: 1,
+      }),
+    ).toBeInTheDocument()
+  })
+
+  it('/fibex-play/gestion sin sesión vuelve a la pantalla de acceso', async () => {
+    renderAt('/fibex-play/gestion')
     expect(
       await screen.findByRole('button', { name: /Acceder al sistema/i }),
     ).toBeInTheDocument()

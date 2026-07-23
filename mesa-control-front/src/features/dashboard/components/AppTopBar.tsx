@@ -10,7 +10,7 @@ const SECCIONES = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Registro', to: '/registro' },
   { label: 'Historial', to: null },
-  { label: 'Fibex Play', to: null },
+  { label: 'Fibex Play', to: '/fibex-play' },
   { label: 'Admin', to: null },
 ] as const
 
