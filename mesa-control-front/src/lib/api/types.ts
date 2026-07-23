@@ -207,6 +207,70 @@ export interface GestionResponse {
   createdAt: string
 }
 
+/* ── Historial General (ver spec `historial-general`) ─────────────────────────
+   Endpoint: GET /gestiones (JWT). Listado paginado + filtrado + ordenado, con
+   contadores por resultado para las chips. Filtrado/orden/paginación server-side. */
+
+export type CanalGestion = 'LLAMADA' | 'WHATSAPP' | 'TELEGRAM'
+
+/** Columnas ordenables (server-side). */
+export type HistorialSortKey =
+  | 'fecha'
+  | 'operador'
+  | 'abonado'
+  | 'resultado'
+  | 'zona'
+
+export type SortDir = 'asc' | 'desc'
+
+/** Fila de la sábana de gestiones; todo el detalle del drawer viaja aquí. */
+export interface GestionRow {
+  id: string
+  /** id legible `GST-#####`, estable y determinista (lo deriva el back). */
+  codigo: string
+  operador: { id: string; nombre: string; iniciales: string }
+  abonado: string
+  telefono: string
+  /** = ubicacion. */
+  zona: string
+  canal: CanalGestion | null
+  resultado: ResultadoGestion
+  /** YYYY-MM-DD */
+  fecha: string
+  /** HH:mm derivado de createdAt. */
+  hora: string
+  duracionMin: number | null
+  detalle: string
+  solucion: string
+}
+
+export interface HistorialParams {
+  page?: number
+  pageSize?: number
+  search?: string
+  /** YYYY-MM-DD, filtra fecha >= desde. */
+  desde?: string
+  /** YYYY-MM-DD, filtra fecha <= hasta. */
+  hasta?: string
+  resultado?: ResultadoGestion
+  sortKey?: HistorialSortKey
+  sortDir?: SortDir
+}
+
+export interface HistorialResponse {
+  items: GestionRow[]
+  /** Total filtrado (para paginación y "de N"). */
+  total: number
+  page: number
+  pageSize: number
+  counts: {
+    /** Total (para la chip "Todos"), independiente del filtro `resultado`. */
+    total: number
+    /** groupBy por resultado, independiente del filtro `resultado`. */
+    porResultado: Record<string, number>
+  }
+}
+
 /* ── Fibex Play · Grilla en Vivo (ver spec `fibex-play-grilla`, §2.3) ─────────
    Endpoint: GET /fibex-play (JWT). Snapshot en vivo de la grilla de canales.
    Los enums llegan como strings; el front mapea a etiqueta/color en

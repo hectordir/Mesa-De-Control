@@ -88,6 +88,21 @@ describe('rutas de la SPA', () => {
     ).toBeInTheDocument()
   })
 
+  it('/historial monta el Historial General con sesión', async () => {
+    useAuthStore.setState(session)
+    renderAt('/historial')
+    expect(
+      await screen.findByRole('heading', { name: 'Historial General', level: 1 }),
+    ).toBeInTheDocument()
+  })
+
+  it('/historial sin sesión vuelve a la pantalla de acceso', async () => {
+    renderAt('/historial')
+    expect(
+      await screen.findByRole('button', { name: /Acceder al sistema/i }),
+    ).toBeInTheDocument()
+  })
+
   it('/fibex-play monta la grilla en vivo con sesión', async () => {
     useAuthStore.setState(session)
     renderAt('/fibex-play')

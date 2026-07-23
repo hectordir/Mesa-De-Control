@@ -9,7 +9,7 @@ const EMPRESAS = ['Mesa de Control', 'Fibex Telecom', 'Soporte-NOC'] as const
 const SECCIONES = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Registro', to: '/registro' },
-  { label: 'Historial', to: null },
+  { label: 'Historial', to: '/historial' },
   { label: 'Fibex Play', to: '/fibex-play' },
   { label: 'Admin', to: null },
 ] as const

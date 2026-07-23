@@ -31,6 +31,75 @@ const OPERADORES = [
   { email: 'luis.parra@fibex.com', name: 'Luis Parra', reparto: [40, 11, 6, 6, 5] },
 ];
 
+/**
+ * Rellena `canal`/`duracion` en filas históricas que ya existían antes de
+ * añadir estas columnas (el `createMany` con `skipDuplicates` no las actualiza).
+ * Idempotente: solo toca filas con `canal IS NULL`. Agrupa por (canal, duracion)
+ * — pocas combinaciones — para hacer un puñado de `updateMany` en vez de miles.
+ */
+async function backfillCanalDuracion(
+  filas: { id: string; canal: string; duracion: number }[],
+): Promise<number> {
+  const grupos = new Map<string, string[]>();
+  for (const f of filas) {
+    const clave = `${f.canal}|${f.duracion}`;
+    (grupos.get(clave) ?? grupos.set(clave, []).get(clave)!).push(f.id);
+  }
+
+  let actualizadas = 0;
+  for (const [clave, ids] of grupos) {
+    const [canal, duracion] = clave.split('|');
+    const { count } = await prisma.gestion.updateMany({
+      where: { id: { in: ids }, canal: null },
+      data: { canal: canal as never, duracion: Number(duracion) },
+    });
+    actualizadas += count;
+  }
+  return actualizadas;
+}
+
+/**
+ * Canal/duración deterministas a partir del id (hash FNV-1a) para filas demo de
+ * días ya cerrados que ninguna generación vigente vuelve a producir (p.ej. el
+ * seed diario de ayer). Estable: el mismo id da siempre lo mismo.
+ */
+function canalDuracionDeId(id: string): { canal: string; duracion: number } {
+  let h = 0x811c9dc5;
+  for (const c of id) {
+    h ^= c.charCodeAt(0);
+    h = Math.imul(h, 0x01000193);
+  }
+  const n = h >>> 0;
+  const canales = ['LLAMADA', 'WHATSAPP', 'TELEGRAM'];
+  return { canal: canales[n % 3], duracion: 2 + (n % 29) };
+}
+
+/**
+ * Cierra cualquier fila demo (`seed-%`/`mensual-%`) que siga con `canal IS NULL`
+ * tras el backfill principal —típicamente jornadas diarias de días anteriores—.
+ * Nunca toca gestiones reales (ids uuid). Idempotente.
+ */
+async function backfillDemoRestantes(): Promise<number> {
+  const pendientes = await prisma.gestion.findMany({
+    where: {
+      canal: null,
+      OR: [{ id: { startsWith: 'seed-' } }, { id: { startsWith: 'mensual-' } }],
+    },
+    select: { id: true },
+  });
+
+  let actualizadas = 0;
+  for (const { id } of pendientes) {
+    const { canal, duracion } = canalDuracionDeId(id);
+    const { count } = await prisma.gestion.updateMany({
+      where: { id, canal: null },
+      data: { canal: canal as never, duracion },
+    });
+    actualizadas += count;
+  }
+  return actualizadas;
+}
+
 /** Día de hoy (zona del servidor) como YYYY-MM-DD. */
 function hoy(): string {
   const now = new Date();
@@ -95,6 +164,13 @@ async function main() {
   );
   console.log(
     `Seed mensual — ${mensuales.length} gestiones generadas · ${nuevasMensuales} nuevas en base`,
+  );
+
+  // Backfill de canal/duracion en filas históricas anteriores a estas columnas.
+  const backfilled = await backfillCanalDuracion([...gestiones, ...mensuales]);
+  const restantes = await backfillDemoRestantes();
+  console.log(
+    `Seed historial — ${backfilled} filas pobladas · ${restantes} demo restantes cerradas`,
   );
 
   // Grilla Fibex Play: 165 canales (6 caídos). Idempotente (ids fijos + skipDuplicates).

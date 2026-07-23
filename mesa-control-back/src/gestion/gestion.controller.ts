@@ -1,8 +1,9 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Post, Query, UseGuards } from '@nestjs/common';
 import {
   ApiBadRequestResponse,
   ApiBearerAuth,
   ApiCreatedResponse,
+  ApiOkResponse,
   ApiOperation,
   ApiTags,
   ApiUnauthorizedResponse,
@@ -11,12 +12,35 @@ import {
 import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 import { CreateGestionDto } from './dto/create-gestion.dto';
 import { GestionResponseDto } from './dto/gestion-response.dto';
+import { ListGestionesQueryDto } from './dto/list-gestiones-query.dto';
+import { GestionesListResponseDto } from './dto/gestiones-list-response.dto';
 import { GestionService } from './gestion.service';
 
 @ApiTags('gestiones')
 @Controller('gestiones')
 export class GestionController {
   constructor(private readonly gestion: GestionService) {}
+
+  @Get()
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('bearerAuth')
+  @ApiOperation({
+    summary: 'Listado paginado del Historial General',
+    description:
+      'Filtra (search, rango de fechas, resultado), ordena y pagina en ' +
+      'Postgres. `counts.porResultado` se calcula sobre el mismo filtro salvo ' +
+      '`resultado`, para que las chips muestren el total de cada categoría. ' +
+      'Requiere JWT.',
+  })
+  @ApiOkResponse({ type: GestionesListResponseDto })
+  @ApiUnauthorizedResponse({
+    description: 'Token ausente, inválido o expirado',
+  })
+  listar(
+    @Query() query: ListGestionesQueryDto,
+  ): Promise<GestionesListResponseDto> {
+    return this.gestion.listar(query);
+  }
 
   @Post()
   @UseGuards(JwtAuthGuard)

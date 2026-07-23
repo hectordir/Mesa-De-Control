@@ -1,4 +1,11 @@
-import { ResultadoGestion } from '../generated/prisma/enums';
+import { CanalGestion, ResultadoGestion } from '../generated/prisma/enums';
+
+/** Canales del Historial, en orden estable para el reparto determinista. */
+export const CANALES: readonly CanalGestion[] = [
+  'LLAMADA',
+  'WHATSAPP',
+  'TELEGRAM',
+];
 
 /** Orden de las columnas de `reparto`. */
 export const RESULTADOS: ResultadoGestion[] = [
@@ -52,6 +59,25 @@ export interface GestionDemo {
   ubicacion: string;
   fecha: Date;
   createdAt: Date;
+  /** Canal de la gestión (Historial). Determinista por índice. */
+  canal: CanalGestion;
+  /** Duración en minutos (2–30), determinista por índice. */
+  duracion: number;
+}
+
+/**
+ * Canal y duración deterministas a partir del índice de la gestión. Sin
+ * aleatoriedad: la misma posición produce siempre lo mismo (idempotencia).
+ * La duración recorre 2–30 min con un paso primo para no repetir en bloque.
+ */
+export function canalDuracionPorIndice(i: number): {
+  canal: CanalGestion;
+  duracion: number;
+} {
+  return {
+    canal: CANALES[i % CANALES.length],
+    duracion: 2 + ((i * 7) % 29),
+  };
 }
 
 /**
@@ -119,5 +145,6 @@ export function construirGestionesDemo(
     ubicacion: UBICACIONES[i % UBICACIONES.length],
     fecha: fechaDia,
     createdAt: new Date(inicio + i * CADENCIA_MS),
+    ...canalDuracionPorIndice(i),
   }));
 }

@@ -24,6 +24,13 @@ enum ResultadoGestion {
   REAGENDADO
 }
 
+/// Canal por el que llegó/atendió la gestión (se muestra en el drawer del Historial).
+enum CanalGestion {
+  LLAMADA
+  WHATSAPP
+  TELEGRAM
+}
+
 enum CategoriaCanal {
   DEPORTES
   INFANTIL
@@ -98,6 +105,11 @@ model Gestion {
   observacion    String       @default("")
   /// Pin exacto 'lat, lng'; opcional (la zona vive en `ubicacion`).
   coordenadas    String?
+  // ── Historial General ──
+  /// Canal de la gestión (opcional; poblado por el seed histórico).
+  canal          CanalGestion?
+  /// Duración de la atención en minutos (opcional).
+  duracion       Int?
 
   @@index([fecha])
   @@index([operadorId, fecha])

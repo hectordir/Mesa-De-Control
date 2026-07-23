@@ -136,4 +136,16 @@ describe('construirGestionesDemo', () => {
     expect(new Set(gestiones.map((g) => g.id)).size).toBe(gestiones.length);
     expect(gestiones[0].id).toBe(`seed-${FECHA}-0000`);
   });
+
+  it('puebla canal y duracion de forma determinista y plausible', () => {
+    const canales = new Set(gestiones.map((g) => g.canal));
+
+    // Solo los tres canales del enum, y los tres presentes.
+    expect([...canales].sort()).toEqual(['LLAMADA', 'TELEGRAM', 'WHATSAPP']);
+    for (const g of gestiones) {
+      expect(g.duracion).toBeGreaterThanOrEqual(2);
+      expect(g.duracion).toBeLessThanOrEqual(30);
+      expect(Number.isInteger(g.duracion)).toBe(true);
+    }
+  });
 });

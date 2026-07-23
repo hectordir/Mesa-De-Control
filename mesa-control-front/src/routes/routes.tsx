@@ -5,6 +5,7 @@ import NuevaGestionPage from '../features/registro/NuevaGestionPage'
 import DashboardPage from '../pages/DashboardPage'
 import FibexPlayPage from '../pages/FibexPlayPage'
 import FibexPlayGestionPage from '../pages/FibexPlayGestionPage'
+import HistorialPage from '../pages/HistorialPage'
 import { ProtectedRoute } from './ProtectedRoute'
 import { RootRedirect } from './RootRedirect'
 
@@ -33,6 +34,14 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute>
         <NuevaGestionPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/historial',
+    element: (
+      <ProtectedRoute>
+        <HistorialPage />
       </ProtectedRoute>
     ),
   },

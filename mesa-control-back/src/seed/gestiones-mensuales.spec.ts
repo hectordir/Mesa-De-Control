@@ -195,6 +195,25 @@ describe('construirMesDemo', () => {
     expect(construirMesDemo({ ...MES, volumen: 0 }, OPERADORES)).toEqual([]);
   });
 
+  it('puebla canal y duracion sin alterar zona/motivo/operador ni la efectividad', () => {
+    const canales = new Set(gestiones.map((g) => g.canal));
+    expect([...canales].sort()).toEqual(['LLAMADA', 'TELEGRAM', 'WHATSAPP']);
+    for (const g of gestiones) {
+      expect(g.duracion).toBeGreaterThanOrEqual(2);
+      expect(g.duracion).toBeLessThanOrEqual(30);
+      expect(Number.isInteger(g.duracion)).toBe(true);
+    }
+    // Regresión: canal/duracion salen de un PRNG propio, no del principal, así
+    // que el reparto por zona/motivo/operador queda idéntico a antes.
+    expect(
+      gestiones.map((g) => `${g.ubicacion}|${g.motivo}|${g.operadorId}`),
+    ).toEqual(
+      construirMesDemo(MES, OPERADORES).map(
+        (g) => `${g.ubicacion}|${g.motivo}|${g.operadorId}`,
+      ),
+    );
+  });
+
   describe('reparto por operador con relieve', () => {
     const eficiencia = (op: string) => {
       const suyas = gestiones.filter((g) => g.operadorId === op);

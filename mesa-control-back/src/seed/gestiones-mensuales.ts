@@ -1,5 +1,5 @@
 import { ResultadoGestion } from '../generated/prisma/enums';
-import { entrelazar, GestionDemo, MOTIVOS } from './gestiones-demo';
+import { CANALES, entrelazar, GestionDemo, MOTIVOS } from './gestiones-demo';
 
 /** Las 21 zonas del heatmap del diseño (`AnalisisMensual.dc.html`, array `zones`). */
 export const ZONAS: readonly string[] = [
@@ -244,6 +244,11 @@ export function construirMesDemo(
 
   const resultados = resultadosDelMes(mes.volumen, mes.efectividad);
 
+  // Canal y duración salen de un PRNG propio (sembrado por el periodo) para no
+  // desplazar la secuencia de `rnd`/`rndOp`: zona, motivo, operador y la
+  // efectividad quedan idénticos a antes de añadir estos campos.
+  const rndCanal = prng(semillaDe(mes.periodo) ^ 0x85ebca6b);
+
   return resultados.map((resultado, i) => {
     const m = elegirPonderado(pesoMotivo, rnd());
     const motivo = motivos[m];
@@ -268,6 +273,10 @@ export function construirMesDemo(
     );
     const operadorId = operadorIds[elegirPonderado(pesosOperador, rndOp())];
 
+    const canal = CANALES[Math.floor(rndCanal() * CANALES.length)];
+    // Duración plausible: 2–30 minutos.
+    const duracion = 2 + Math.floor(rndCanal() * 29);
+
     return {
       id: `mensual-${mes.periodo}-${String(i).padStart(4, '0')}`,
       operadorId,
@@ -276,6 +285,8 @@ export function construirMesDemo(
       ubicacion,
       fecha,
       createdAt,
+      canal,
+      duracion,
     };
   });
 }
