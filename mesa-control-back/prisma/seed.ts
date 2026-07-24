@@ -8,6 +8,7 @@ import { sembrarCanales } from '../src/seed/canales';
 import { construirGestionesDemo } from '../src/seed/gestiones-demo';
 import { construirGestionesMensuales } from '../src/seed/gestiones-mensuales';
 import { sembrarOperadoresDummy } from '../src/seed/operadores-dummy';
+import { construirSupervisionDemo } from '../src/seed/supervision-demo';
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL as string }),
@@ -100,6 +101,33 @@ async function backfillDemoRestantes(): Promise<number> {
   return actualizadas;
 }
 
+/**
+ * Rellena `abonado` en las filas demo de HOY que aún lo tengan vacío (creadas
+ * antes de que el builder lo poblara; `skipDuplicates` no actualiza). Idempotente:
+ * solo toca `abonado = ''`. Agrupa por el valor destino para hacer pocos
+ * `updateMany` en vez de uno por fila. No toca gestiones reales ni el histórico.
+ */
+async function backfillAbonado(
+  filas: { id: string; abonado: string }[],
+): Promise<number> {
+  const grupos = new Map<string, string[]>();
+  for (const f of filas) {
+    (grupos.get(f.abonado) ?? grupos.set(f.abonado, []).get(f.abonado)!).push(
+      f.id,
+    );
+  }
+
+  let actualizadas = 0;
+  for (const [abonado, ids] of grupos) {
+    const { count } = await prisma.gestion.updateMany({
+      where: { id: { in: ids }, abonado: '' },
+      data: { abonado },
+    });
+    actualizadas += count;
+  }
+  return actualizadas;
+}
+
 /** Día de hoy (zona del servidor) como YYYY-MM-DD. */
 function hoy(): string {
   const now = new Date();
@@ -118,6 +146,26 @@ async function main() {
         where: { email },
         update: { name, role: 'OPERADOR', isActive: true },
         create: { email, name, role: 'OPERADOR', isActive: true, passwordHash },
+      }),
+    ),
+  );
+
+  // Staff con rol elevado para gatear Admin · Supervisión (RBAC). Idempotente
+  // (upsert por email). El ADMIN es el usuario demo del diseño.
+  const staff = [
+    { email: 'admin@fibex.com', name: 'Admin Fibex', role: 'ADMIN' as const },
+    {
+      email: 'supervisor@fibex.com',
+      name: 'Supervisor Fibex',
+      role: 'SUPERVISOR' as const,
+    },
+  ];
+  await Promise.all(
+    staff.map(({ email, name, role }) =>
+      prisma.user.upsert({
+        where: { email },
+        update: { name, role, isActive: true },
+        create: { email, name, role, isActive: true, passwordHash },
       }),
     ),
   );
@@ -142,6 +190,27 @@ async function main() {
   const total = await prisma.gestion.count({
     where: { fecha: new Date(`${fecha}T00:00:00.000Z`) },
   });
+
+  // Rellena el abonado de las filas de hoy que se crearon con abonado vacío
+  // (alimentan la lista de Depuración de Supervisión).
+  const abonadosHoy = await backfillAbonado(gestiones);
+  if (abonadosHoy > 0) {
+    console.log(`Seed depuración — ${abonadosHoy} abonados rellenados hoy`);
+  }
+
+  // Admin · Supervisión: gestiones de hoy en las 10 zonas de La Guaira + escaladas
+  // abiertas de 1–5 días (Bandeja N2, SLA, mapa). Idempotente (ids `sup-…` fijos).
+  const supervisionGestiones = construirSupervisionDemo(
+    fecha,
+    usuarios.map((u) => u.id),
+  );
+  const { count: nuevasSupervision } = await prisma.gestion.createMany({
+    data: supervisionGestiones,
+    skipDuplicates: true,
+  });
+  console.log(
+    `Seed supervisión — ${supervisionGestiones.length} gestiones generadas · ${nuevasSupervision} nuevas en base`,
+  );
 
   // Historia mensual del Análisis Mensual: 4 meses cerrados + el mes en curso
   // hasta ayer. No toca el día de hoy, así que el Monitor Diario no cambia.

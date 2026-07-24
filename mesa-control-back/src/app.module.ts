@@ -11,6 +11,7 @@ import { GestionAppModule } from './fibex-play/gestion/gestion-app.module';
 import { GestionModule } from './gestion/gestion.module';
 import { OperadoresModule } from './operadores/operadores.module';
 import { PrismaModule } from './prisma/prisma.module';
+import { SupervisionModule } from './supervision/supervision.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { PrismaModule } from './prisma/prisma.module';
     GestionAppModule,
     GestionModule,
     OperadoresModule,
+    SupervisionModule,
   ],
   controllers: [AppController],
   providers: [AppService],

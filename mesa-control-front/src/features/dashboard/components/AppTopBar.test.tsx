@@ -39,4 +39,30 @@ describe('AppTopBar', () => {
       'page',
     )
   })
+
+  it('oculta el ítem Admin a un rol OPERADOR', () => {
+    renderTopBar()
+    expect(screen.queryByRole('link', { name: 'Admin' })).not.toBeInTheDocument()
+  })
+
+  it('muestra el ítem Admin (→ /admin) a un rol ADMIN', () => {
+    useAuthStore.setState({
+      token: 'jwt-123',
+      user: { id: 'u-2', email: 'admin@fibex.com', name: 'Admin', role: 'ADMIN' },
+    })
+    renderTopBar()
+    expect(screen.getByRole('link', { name: 'Admin' })).toHaveAttribute(
+      'href',
+      '/admin',
+    )
+  })
+
+  it('muestra el ítem Admin a un rol SUPERVISOR', () => {
+    useAuthStore.setState({
+      token: 'jwt-123',
+      user: { id: 'u-3', email: 'sup@fibex.com', name: 'Sup', role: 'SUPERVISOR' },
+    })
+    renderTopBar()
+    expect(screen.getByRole('link', { name: 'Admin' })).toBeInTheDocument()
+  })
 })

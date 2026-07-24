@@ -63,6 +63,8 @@ export interface GestionDemo {
   canal: CanalGestion;
   /** Duración en minutos (2–30), determinista por índice. */
   duracion: number;
+  /** Abonado (subscriptor) legible para la lista de Depuración. Determinista. */
+  abonado: string;
 }
 
 /**
@@ -137,14 +139,19 @@ export function construirGestionesDemo(
 
   const inicio = new Date(`${fecha}${INICIO_JORNADA_UTC}`).getTime();
 
-  return secuencia.map((g, i) => ({
-    id: `seed-${fecha}-${String(i).padStart(4, '0')}`,
-    operadorId: g.operadorId,
-    resultado: g.resultado,
-    motivo: motivos[i],
-    ubicacion: UBICACIONES[i % UBICACIONES.length],
-    fecha: fechaDia,
-    createdAt: new Date(inicio + i * CADENCIA_MS),
-    ...canalDuracionPorIndice(i),
-  }));
+  return secuencia.map((g, i) => {
+    const ubicacion = UBICACIONES[i % UBICACIONES.length];
+    return {
+      id: `seed-${fecha}-${String(i).padStart(4, '0')}`,
+      operadorId: g.operadorId,
+      resultado: g.resultado,
+      motivo: motivos[i],
+      ubicacion,
+      // Abonado legible y determinista (número de casa/apto estable por índice).
+      abonado: `${ubicacion} · Casa ${String((i % 60) + 1).padStart(2, '0')}`,
+      fecha: fechaDia,
+      createdAt: new Date(inicio + i * CADENCIA_MS),
+      ...canalDuracionPorIndice(i),
+    };
+  });
 }

@@ -283,6 +283,8 @@ export function construirMesDemo(
       resultado,
       motivo,
       ubicacion,
+      // Abonado legible y determinista por índice (consistencia con el demo diario).
+      abonado: `${ubicacion} · Casa ${String((i % 60) + 1).padStart(2, '0')}`,
       fecha,
       createdAt,
       canal,

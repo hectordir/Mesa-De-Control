@@ -397,3 +397,81 @@ export interface CrearAtencionPayload {
   solucion: string
   estado: EstadoAtencion
 }
+
+/* ── Admin · Supervisión (ver spec `admin-supervision`, §2) ───────────────────
+   Endpoints (rol ADMIN/SUPERVISOR): GET /supervision/resumen?fecha=YYYY-MM-DD y
+   DELETE /supervision/gestiones. El DTO consolida todos los paneles del día.   */
+
+export type ZonaEstado = 'danger' | 'warning' | 'info' | 'success'
+
+export interface SupervisionKpis {
+  atendidosHoy: number
+  /** Atendidos hoy − día anterior. */
+  atendidosDelta: number
+  /** 0–100. */
+  efectividad: number
+  efectividadMeta: number
+  escaladosNoc: number
+  /** Escalados NOC hoy − día anterior. */
+  escaladosDelta: number
+  /** 0–100. */
+  slaCumplido: number
+  slaMeta: number
+}
+
+export interface SupervisionZona {
+  nombre: string
+  count: number
+  estado: ZonaEstado
+}
+
+/** Gestión abierta escalada a Nivel 2 / NOC. */
+export interface SupervisionBandejaItem {
+  id: string
+  /** Orden derivada, p. ej. `#OS-4F2A1C`. */
+  orden: string
+  abonado: string
+  zona: string
+  motivo: string
+  /** Días abierta desde `fecha`. */
+  dias: number
+  estado: string
+}
+
+/** Bucket de antigüedad; siempre llegan 5 (`0,1,2,3,4+`). */
+export interface SupervisionSlaBucket {
+  key: '0' | '1' | '2' | '3' | '4+'
+  label: string
+  count: number
+}
+
+export interface SupervisionHeatmap {
+  motivos: string[]
+  /** `celdas.length === motivos.length`, alineadas por índice. */
+  filas: { zona: string; celdas: number[]; total: number }[]
+}
+
+export interface SupervisionDepuracionItem {
+  id: string
+  /** YYYY-MM-DD */
+  fecha: string
+  operador: string
+  abonado: string
+}
+
+export interface SupervisionResumen {
+  /** YYYY-MM-DD efectiva. */
+  fecha: string
+  kpis: SupervisionKpis
+  zonas: SupervisionZona[]
+  bandejaN2: SupervisionBandejaItem[]
+  /** Siempre 5 buckets. */
+  sla: SupervisionSlaBucket[]
+  heatmap: SupervisionHeatmap
+  depuracion: SupervisionDepuracionItem[]
+}
+
+/** Resultado de `DELETE /supervision/gestiones`. */
+export interface DeleteGestionesResult {
+  deleted: number
+}

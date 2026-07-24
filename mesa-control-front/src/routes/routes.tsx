@@ -6,7 +6,9 @@ import DashboardPage from '../pages/DashboardPage'
 import FibexPlayPage from '../pages/FibexPlayPage'
 import FibexPlayGestionPage from '../pages/FibexPlayGestionPage'
 import HistorialPage from '../pages/HistorialPage'
+import AdminPage from '../pages/AdminPage'
 import { ProtectedRoute } from './ProtectedRoute'
+import { RoleRoute } from './RoleRoute'
 import { RootRedirect } from './RootRedirect'
 
 /** Rutas de la SPA; exportadas para poder montarlas en un memory router. */
@@ -58,6 +60,16 @@ export const routes: RouteObject[] = [
     element: (
       <ProtectedRoute>
         <FibexPlayGestionPage />
+      </ProtectedRoute>
+    ),
+  },
+  {
+    path: '/admin',
+    element: (
+      <ProtectedRoute>
+        <RoleRoute roles={['ADMIN', 'SUPERVISOR']}>
+          <AdminPage />
+        </RoleRoute>
       </ProtectedRoute>
     ),
   },

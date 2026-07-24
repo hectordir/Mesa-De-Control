@@ -1,18 +1,20 @@
 import { NavLink } from 'react-router-dom'
 import { cx } from '../../../components/ui/cx'
+import { useAuthStore } from '../../../stores/auth.store'
+import type { Role } from '../../../lib/api/types'
 import { ThemeToggle } from './ThemeToggle'
 import { UserMenu } from './UserMenu'
 
 const EMPRESAS = ['Mesa de Control', 'Fibex Telecom', 'Soporte-NOC'] as const
 
-/** Secciones del producto; sólo Dashboard está implementada. */
-const SECCIONES = [
+/** Secciones del producto; `roles` restringe la visibilidad cuando aplica. */
+const SECCIONES: { label: string; to: string; roles?: Role[] }[] = [
   { label: 'Dashboard', to: '/dashboard' },
   { label: 'Registro', to: '/registro' },
   { label: 'Historial', to: '/historial' },
   { label: 'Fibex Play', to: '/fibex-play' },
-  { label: 'Admin', to: null },
-] as const
+  { label: 'Admin', to: '/admin', roles: ['ADMIN', 'SUPERVISOR'] },
+]
 
 function CompanyTabs() {
   return (
@@ -46,35 +48,28 @@ function CompanyTabs() {
 }
 
 function MainNav() {
+  const role = useAuthStore((state) => state.user?.role)
+  const visibles = SECCIONES.filter(
+    (s) => !s.roles || (role !== undefined && s.roles.includes(role)),
+  )
   return (
     <nav aria-label="Secciones" className="flex min-w-0 gap-[2px] overflow-hidden">
-      {SECCIONES.map((seccion) =>
-        seccion.to ? (
-          <NavLink
-            key={seccion.label}
-            to={seccion.to}
-            className={({ isActive }) =>
-              cx(
-                'rounded-control px-[10px] py-[7px] text-[13px]',
-                isActive
-                  ? 'bg-brand-nav font-semibold text-brand'
-                  : 'font-medium text-text-secondary hover:text-text-primary',
-              )
-            }
-          >
-            {seccion.label}
-          </NavLink>
-        ) : (
-          <span
-            key={seccion.label}
-            aria-disabled="true"
-            title="Disponible próximamente"
-            className="rounded-control px-[10px] py-[7px] text-[13px] font-medium text-text-secondary"
-          >
-            {seccion.label}
-          </span>
-        ),
-      )}
+      {visibles.map((seccion) => (
+        <NavLink
+          key={seccion.label}
+          to={seccion.to}
+          className={({ isActive }) =>
+            cx(
+              'rounded-control px-[10px] py-[7px] text-[13px]',
+              isActive
+                ? 'bg-brand-nav font-semibold text-brand'
+                : 'font-medium text-text-secondary hover:text-text-primary',
+            )
+          }
+        >
+          {seccion.label}
+        </NavLink>
+      ))}
     </nav>
   )
 }
