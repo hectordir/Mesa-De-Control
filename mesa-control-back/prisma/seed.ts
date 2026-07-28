@@ -5,6 +5,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { sembrarAtenciones } from '../src/seed/atenciones';
 import { sembrarCanales } from '../src/seed/canales';
+import { diaLocal } from '../src/seed/dia';
 import { construirGestionesDemo } from '../src/seed/gestiones-demo';
 import { construirGestionesMensuales } from '../src/seed/gestiones-mensuales';
 import { sembrarOperadoresDummy } from '../src/seed/operadores-dummy';
@@ -84,7 +85,11 @@ async function backfillDemoRestantes(): Promise<number> {
   const pendientes = await prisma.gestion.findMany({
     where: {
       canal: null,
-      OR: [{ id: { startsWith: 'seed-' } }, { id: { startsWith: 'mensual-' } }],
+      OR: [
+        { id: { startsWith: 'seed-' } },
+        { id: { startsWith: 'mensual-' } },
+        { id: { startsWith: 'sup-' } },
+      ],
     },
     select: { id: true },
   });
@@ -128,14 +133,6 @@ async function backfillAbonado(
   return actualizadas;
 }
 
-/** Día de hoy (zona del servidor) como YYYY-MM-DD. */
-function hoy(): string {
-  const now = new Date();
-  const mes = String(now.getMonth() + 1).padStart(2, '0');
-  const dia = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${mes}-${dia}`;
-}
-
 async function main() {
   const passwordHash = await bcrypt.hash(PASSWORD, 10);
 
@@ -174,7 +171,10 @@ async function main() {
   // por email); no participan en las gestiones demo/mensuales.
   const dummies = await sembrarOperadoresDummy(prisma, passwordHash);
 
-  const fecha = hoy();
+  // Todo el seed pivota sobre ESTE instante: el mismo "hoy" para el monitor
+  // diario, supervisión, la historia mensual, la grilla y la bitácora.
+  const ahora = new Date();
+  const fecha = diaLocal(ahora);
   const gestiones = construirGestionesDemo(
     fecha,
     OPERADORES.map(({ reparto }, i) => ({ id: usuarios[i].id, reparto })),
@@ -215,7 +215,7 @@ async function main() {
   // Historia mensual del Análisis Mensual: 4 meses cerrados + el mes en curso
   // hasta ayer. No toca el día de hoy, así que el Monitor Diario no cambia.
   const mensuales = construirGestionesMensuales(
-    new Date(),
+    ahora,
     usuarios.filter((u) => u.email !== 'operador@fibex.com').map((u) => u.id),
   );
   // En lotes: un solo INSERT de miles de filas roza el límite de parámetros de Postgres.
@@ -242,11 +242,13 @@ async function main() {
     `Seed historial — ${backfilled} filas pobladas · ${restantes} demo restantes cerradas`,
   );
 
-  // Grilla Fibex Play: 165 canales (6 caídos). Idempotente (ids fijos + skipDuplicates).
-  const { count: nuevosCanales } = await sembrarCanales(prisma);
+  // Grilla Fibex Play: 165 canales (6 caídos HOY). Idempotente (ids fijos +
+  // skipDuplicates) y con refresco de `detectadoEn` al día en curso.
+  const { count: nuevosCanales, actualizadas: caidasHoy } =
+    await sembrarCanales(prisma, ahora);
   const totalCanales = await prisma.canal.count();
   console.log(
-    `Seed canales — ${nuevosCanales} nuevos · ${totalCanales} canales en base`,
+    `Seed canales — ${nuevosCanales} nuevos · ${caidasHoy} caídas fechadas hoy · ${totalCanales} canales en base`,
   );
 
   // Fibex Play · Gestión: 24 atenciones ligadas a operadores ya sembrados
@@ -254,13 +256,11 @@ async function main() {
   const operadorIds = usuarios
     .filter((u) => u.email !== 'operador@fibex.com')
     .map((u) => u.id);
-  const { count: nuevasAtenciones } = await sembrarAtenciones(
-    prisma,
-    operadorIds,
-  );
+  const { count: nuevasAtenciones, actualizadas: atencionesHoy } =
+    await sembrarAtenciones(prisma, operadorIds, ahora);
   const totalAtenciones = await prisma.atencionApp.count();
   console.log(
-    `Seed atenciones — ${nuevasAtenciones} nuevas · ${totalAtenciones} atenciones en base`,
+    `Seed atenciones — ${nuevasAtenciones} nuevas · ${atencionesHoy} fechadas hoy · ${totalAtenciones} atenciones en base`,
   );
 }
 

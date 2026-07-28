@@ -1,5 +1,6 @@
 import { EstadoAtencion } from '../generated/prisma/enums';
 import { MOTIVOS, SOLUCIONES } from '../fibex-play/gestion/catalogos';
+import { diaLocal } from './dia';
 
 /** Fila exacta de `createMany` de una atención (sirve para seed y tests). */
 export interface AtencionSeed {
@@ -13,8 +14,6 @@ export interface AtencionSeed {
   creadoEn: Date;
 }
 
-/** Día base determinista de la bitácora (mismo que el resto de seeds). */
-const FECHA_BASE = '2026-07-22';
 /** Primera atención: 12:00 UTC = 08:00 en Venezuela. */
 const INICIO_UTC = 'T12:00:00.000Z';
 /** Separación entre atenciones (20 min) → 24 instantes distintos y orden estable. */
@@ -60,15 +59,18 @@ function expandir<T>(reparto: readonly [T, number][]): T[] {
 /**
  * Construye las 24 atenciones demo, deterministas e idempotentes (ids fijos
  * `atencion-0001`…). Canales con ranking desc (ESPN top), estados 16/5/3 y
- * motivos que recorren las 4 categorías de origen. `creadoEn` con fechas base
- * fijas (no `now()`) para orden descendente estable.
+ * motivos que recorren las 4 categorías de origen. `creadoEn` se reparte por la
+ * jornada laboral del DÍA DE HOY (12:00–19:40 UTC ≈ 08:00–15:40 en Venezuela),
+ * a partir de `hoy` —nunca una fecha literal— para que Fibex Play · Gestión
+ * muestre actividad al abrirlo. Dentro de un mismo día es reproducible.
  */
 export function construirAtenciones(
   operadorIds: readonly string[],
+  hoy: Date = new Date(),
 ): AtencionSeed[] {
   const canales = expandir(CANAL_REPARTO); // 24
   const estados = expandir(ESTADO_REPARTO); // 24
-  const inicio = new Date(`${FECHA_BASE}${INICIO_UTC}`).getTime();
+  const inicio = new Date(`${diaLocal(hoy)}${INICIO_UTC}`).getTime();
 
   return canales.map((canal, i) => ({
     id: `atencion-${String(i + 1).padStart(4, '0')}`,
@@ -90,16 +92,38 @@ export interface AtencionCreateManyClient {
       data: AtencionSeed[];
       skipDuplicates?: boolean;
     }): Promise<{ count: number }>;
+    updateMany(args: {
+      where: { id: string };
+      data: { creadoEn: Date };
+    }): Promise<{ count: number }>;
   };
 }
 
-/** Idempotente: `createMany` con `skipDuplicates` sobre ids deterministas. */
-export function sembrarAtenciones(
+/**
+ * Idempotente: `createMany` con `skipDuplicates` sobre ids deterministas y, a
+ * continuación, refresco de `creadoEn` al día de hoy. El refresco es necesario
+ * porque `skipDuplicates` NO actualiza las filas ya existentes: sin él, la
+ * bitácora se quedaría congelada en el día del primer seed.
+ */
+export async function sembrarAtenciones(
   prisma: AtencionCreateManyClient,
   operadorIds: readonly string[],
-): Promise<{ count: number }> {
-  return prisma.atencionApp.createMany({
-    data: construirAtenciones(operadorIds),
+  hoy: Date = new Date(),
+): Promise<{ count: number; actualizadas: number }> {
+  const filas = construirAtenciones(operadorIds, hoy);
+  const { count } = await prisma.atencionApp.createMany({
+    data: filas,
     skipDuplicates: true,
   });
+
+  let actualizadas = 0;
+  for (const fila of filas) {
+    const { count: n } = await prisma.atencionApp.updateMany({
+      where: { id: fila.id },
+      data: { creadoEn: fila.creadoEn },
+    });
+    actualizadas += n;
+  }
+
+  return { count, actualizadas };
 }

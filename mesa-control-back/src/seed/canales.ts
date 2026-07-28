@@ -4,12 +4,10 @@ import {
   SeveridadIncidencia,
   TipoIncidencia,
 } from '../generated/prisma/enums';
+import { diaLocal } from './dia';
 
 /** Total de canales de la grilla (coincide con el diseño). */
 export const TOTAL_CANALES = 165;
-
-/** Día base determinista de las caídas (mismo que el ejemplo del spec). */
-const FECHA_BASE = '2026-07-22';
 
 /** Fila exacta de `createMany` de un canal: sirve tanto para el seed como para los tests. */
 export interface CanalSeed {
@@ -94,17 +92,19 @@ const OPERATIVOS_POR_CATEGORIA: readonly [CategoriaCanal, number][] = [
 
 const dosDigitos = (n: number) => String(n).padStart(2, '0');
 
-/** `detectadoEn` de una caída: día base a la hora indicada, en UTC (determinista). */
-function detectadoEn(hora: string): Date {
-  return new Date(`${FECHA_BASE}T${hora}:00.000Z`);
+/** `detectadoEn` de una caída: el día de `hoy` a la hora del spec, en UTC. */
+function detectadoEn(hora: string, hoy: Date): Date {
+  return new Date(`${diaLocal(hoy)}T${hora}:00.000Z`);
 }
 
 /**
  * Construye los 165 canales de la grilla (6 caídos + 159 operativos) de forma
  * determinista: ids fijos (`canal-0001`…) para que `createMany`/`upsert` con
- * `skipDuplicates` sea idempotente. Los caídos van primero, ordenados por hora.
+ * `skipDuplicates` sea idempotente. Los caídos van primero, ordenados por hora,
+ * y se detectan el DÍA DE HOY (derivado de `hoy`, nunca una fecha literal) para
+ * que la Grilla en Vivo muestre incidencias vigentes.
  */
-export function construirCanales(): CanalSeed[] {
+export function construirCanales(hoy: Date = new Date()): CanalSeed[] {
   const canales: CanalSeed[] = [];
   let orden = 0;
 
@@ -117,7 +117,7 @@ export function construirCanales(): CanalSeed[] {
       estado: 'CAIDO',
       tipoIncidencia: caido.tipoIncidencia,
       severidad: caido.severidad,
-      detectadoEn: detectadoEn(caido.hora),
+      detectadoEn: detectadoEn(caido.hora, hoy),
       orden,
     });
   }
@@ -149,18 +149,38 @@ export interface CanalCreateManyClient {
       data: CanalSeed[];
       skipDuplicates?: boolean;
     }): Promise<{ count: number }>;
+    updateMany(args: {
+      where: { id: string };
+      data: { detectadoEn: Date };
+    }): Promise<{ count: number }>;
   };
 }
 
 /**
- * Idempotente: `createMany` con `skipDuplicates` sobre ids deterministas.
- * Re-ejecutar no duplica ni rompe nada.
+ * Idempotente: `createMany` con `skipDuplicates` sobre ids deterministas más el
+ * refresco de `detectadoEn` de los caídos al día de hoy (`skipDuplicates` no
+ * actualiza filas existentes, así que sin esto la grilla mostraría caídas de
+ * hace días). Re-ejecutar no duplica ni rompe nada.
  */
-export function sembrarCanales(
+export async function sembrarCanales(
   prisma: CanalCreateManyClient,
-): Promise<{ count: number }> {
-  return prisma.canal.createMany({
-    data: construirCanales(),
+  hoy: Date = new Date(),
+): Promise<{ count: number; actualizadas: number }> {
+  const filas = construirCanales(hoy);
+  const { count } = await prisma.canal.createMany({
+    data: filas,
     skipDuplicates: true,
   });
+
+  let actualizadas = 0;
+  for (const fila of filas) {
+    if (!fila.detectadoEn) continue;
+    const { count: n } = await prisma.canal.updateMany({
+      where: { id: fila.id },
+      data: { detectadoEn: fila.detectadoEn },
+    });
+    actualizadas += n;
+  }
+
+  return { count, actualizadas };
 }

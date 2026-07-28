@@ -41,6 +41,16 @@ describe('construirSupervisionDemo', () => {
     expect(new Set(filas.map((f) => f.id)).size).toBe(filas.length);
   });
 
+  it('pobla canal y duración en todas las filas (filtros del Historial)', () => {
+    for (const f of filas) {
+      expect(['LLAMADA', 'WHATSAPP', 'TELEGRAM']).toContain(f.canal);
+      expect(f.duracion).toBeGreaterThanOrEqual(2);
+      expect(f.duracion).toBeLessThanOrEqual(30);
+    }
+    // Los tres canales aparecen: ningún filtro del Historial queda en cero.
+    expect(new Set(filas.map((f) => f.canal)).size).toBe(3);
+  });
+
   it('reparte el operador entre los provistos', () => {
     const usados = new Set(filas.map((f) => f.operadorId));
     for (const op of OPERADORES) expect(usados.has(op)).toBe(true);

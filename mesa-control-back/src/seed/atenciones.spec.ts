@@ -1,4 +1,5 @@
-import { construirAtenciones } from './atenciones';
+import { construirAtenciones, sembrarAtenciones } from './atenciones';
+import { diaLocal } from './dia';
 import {
   CANALES,
   MOTIVOS,
@@ -58,11 +59,57 @@ describe('construirAtenciones', () => {
     }
   });
 
-  it('usa fechas base deterministas (no now()) y es reproducible', () => {
+  it('es reproducible para un mismo día y da 24 instantes distintos', () => {
     expect(construirAtenciones(OPERADORES)).toEqual(atenciones);
     for (const a of atenciones) expect(a.creadoEn).toBeInstanceOf(Date);
     // Fechas distintas → orden estable por creadoEn.
     const tiempos = atenciones.map((a) => a.creadoEn.getTime());
     expect(new Set(tiempos).size).toBe(24);
+  });
+
+  it('sitúa todas las atenciones en el día de HOY por defecto', () => {
+    const hoy = diaLocal();
+    for (const a of atenciones) {
+      expect(diaLocal(a.creadoEn)).toBe(hoy);
+    }
+  });
+
+  it('acepta un día base explícito y reparte por horas laborales', () => {
+    const base = new Date(2026, 2, 5, 12, 0, 0);
+    const filas = construirAtenciones(OPERADORES, base);
+    for (const f of filas) expect(diaLocal(f.creadoEn)).toBe('2026-03-05');
+    // Reparto en al menos 4 horas distintas del día (no todas al mismo minuto).
+    const horas = new Set(filas.map((f) => f.creadoEn.getUTCHours()));
+    expect(horas.size).toBeGreaterThanOrEqual(4);
+    expect(filas[0].creadoEn.getTime()).toBeLessThan(
+      filas[filas.length - 1].creadoEn.getTime(),
+    );
+  });
+});
+
+describe('sembrarAtenciones', () => {
+  it('inserta con skipDuplicates y refresca creadoEn de las filas ya existentes', async () => {
+    const updates: { id: string; creadoEn: Date }[] = [];
+    const prisma = {
+      atencionApp: {
+        createMany: jest.fn().mockResolvedValue({ count: 0 }),
+        updateMany: jest
+          .fn()
+          .mockImplementation(
+            (args: { where: { id: string }; data: { creadoEn: Date } }) => {
+              updates.push({ id: args.where.id, creadoEn: args.data.creadoEn });
+              return Promise.resolve({ count: 1 });
+            },
+          ),
+      },
+    };
+
+    const { count, actualizadas } = await sembrarAtenciones(prisma, OPERADORES);
+
+    expect(count).toBe(0);
+    expect(actualizadas).toBe(24);
+    expect(updates).toHaveLength(24);
+    const hoy = diaLocal();
+    for (const u of updates) expect(diaLocal(u.creadoEn)).toBe(hoy);
   });
 });

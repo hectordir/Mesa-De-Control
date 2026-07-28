@@ -1,4 +1,5 @@
-import { ResultadoGestion } from '../generated/prisma/enums';
+import { CanalGestion, ResultadoGestion } from '../generated/prisma/enums';
+import { canalDuracionPorIndice } from './gestiones-demo';
 
 /** Las 10 parroquias de La Guaira del diseño de Admin · Supervisión. */
 export const ZONAS_GUAIRA = [
@@ -50,6 +51,10 @@ export interface SupervisionGestion {
   fecha: Date;
   createdAt: Date;
   abonado: string;
+  /** Canal de la gestión: sin él, los filtros del Historial descartan estas filas. */
+  canal: CanalGestion;
+  /** Duración en minutos (2–30), determinista por posición. */
+  duracion: number;
 }
 
 /**
@@ -87,6 +92,7 @@ export function construirSupervisionDemo(
       fecha: fechaDia,
       createdAt,
       abonado: `Abonado ${zona} #${String(k + 1).padStart(2, '0')}`,
+      ...canalDuracionPorIndice(global),
     });
     global += 1;
   };
