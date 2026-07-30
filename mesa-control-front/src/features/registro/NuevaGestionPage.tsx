@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { AppTopBar } from '../dashboard/components/AppTopBar'
 import { GestionForm } from './components/GestionForm'
-import { EstadoSistemaRail } from './components/EstadoSistemaRail'
 import { GuardadoToast } from './components/GuardadoToast'
 
 /** Registro → Nueva Gestión: alta de una atención de la mesa de control. */
@@ -21,10 +20,7 @@ export default function NuevaGestionPage() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-[1fr_320px]">
-        <GestionForm onGuardado={() => setGuardado(true)} />
-        <EstadoSistemaRail />
-      </div>
+      <GestionForm onGuardado={() => setGuardado(true)} />
 
       <GuardadoToast visible={guardado} onClose={() => setGuardado(false)} />
     </div>

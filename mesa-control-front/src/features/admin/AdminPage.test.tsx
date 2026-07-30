@@ -62,7 +62,7 @@ const resumen = (over: Partial<SupervisionResumen> = {}): SupervisionResumen => 
     {
       id: 'b-1',
       orden: '#OS-4821',
-      abonado: 'Cond. Los Robles',
+      abonado: '1002451',
       zona: 'Caraballeda',
       motivo: 'Corte de fibra',
       dias: 4,
@@ -81,8 +81,8 @@ const resumen = (over: Partial<SupervisionResumen> = {}): SupervisionResumen => 
     filas: [{ zona: 'Caraballeda', celdas: [4, 3], total: 7 }],
   },
   depuracion: [
-    { id: 'g-1', fecha: '2026-07-23', operador: 'José V.', abonado: 'LG18823 · C. Los Robles' },
-    { id: 'g-2', fecha: '2026-07-22', operador: 'Keyla G.', abonado: 'MC10245 · Res. Miramar' },
+    { id: 'g-1', fecha: '2026-07-23', operador: 'José V.', abonado: '1004871' },
+    { id: 'g-2', fecha: '2026-07-22', operador: 'Keyla G.', abonado: '1010245' },
   ],
   ...over,
 })
@@ -158,7 +158,7 @@ describe('AdminPage', () => {
     deleteMock.mockResolvedValue({ deleted: 1 })
     renderPage()
 
-    const fila = await screen.findByLabelText(/Seleccionar LG18823/i)
+    const fila = await screen.findByLabelText(/Seleccionar 1004871/i)
     await userEvent.click(fila)
 
     const boton = screen.getByRole('button', { name: /Eliminar 1 seleccionada/i })

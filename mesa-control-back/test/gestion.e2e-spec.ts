@@ -18,6 +18,8 @@ interface GestionBody {
   fecha: string;
   operador: { id: string; nombre: string };
   zona: string;
+  nombreCliente: string;
+  observacion: string;
   coordenadas: string | null;
   createdAt: string;
 }
@@ -67,6 +69,7 @@ const bodyValido = (over: Record<string, unknown> = {}) => ({
   operadorId: USER.id,
   fecha: '2026-07-22',
   abonado: 'Cond. Los Robles',
+  nombreCliente: 'María Pérez',
   telefono: '0412 555 1234',
   detalle: 'Sin Internet',
   solucion: 'Reinicio de ONU',
@@ -181,17 +184,60 @@ describe('Gestion · registro (e2e)', () => {
   it.each([
     'operadorId',
     'abonado',
+    'nombreCliente',
     'telefono',
     'detalle',
     'solucion',
     'zona',
     'motivo',
-    'observacion',
   ])('400 si falta el obligatorio %p', async (campo) => {
     const body = bodyValido();
     delete (body as Record<string, unknown>)[campo];
     const res = await post(body).expect(400);
     expect(Array.isArray((res.body as ErrorBody).message)).toBe(true);
+    expect(create).not.toHaveBeenCalled();
+  });
+
+  it('201 con nombreCliente: se persiste y vuelve en el body', async () => {
+    const res = await post(
+      bodyValido({ nombreCliente: 'Ana Quintero' }),
+    ).expect(201);
+    const data = (
+      create.mock.calls[0] as [{ data: Record<string, unknown> }]
+    )[0].data;
+    expect(data.nombreCliente).toBe('Ana Quintero');
+    expect((res.body as GestionBody).nombreCliente).toBe('Ana Quintero');
+  });
+
+  it.each(['nombreCliente', 'telefono'])(
+    '400 si %p llega como cadena vacía',
+    async (campo) => {
+      const res = await post(bodyValido({ [campo]: '' })).expect(400);
+      expect(Array.isArray((res.body as ErrorBody).message)).toBe(true);
+      expect(create).not.toHaveBeenCalled();
+    },
+  );
+
+  // `observacion` es opcional (spec `abonado-fibex-y-datos-demo`): el default
+  // '' de Prisma cubre su ausencia, no puede devolver 400.
+  it('201 sin observacion: se persiste como cadena vacía', async () => {
+    const body = bodyValido();
+    delete (body as Record<string, unknown>).observacion;
+    const res = await post(body).expect(201);
+    const data = (
+      create.mock.calls[0] as [{ data: Record<string, unknown> }]
+    )[0].data;
+    expect(data.observacion).toBe('');
+    expect((res.body as GestionBody).observacion).toBe('');
+  });
+
+  it('201 con observacion vacía: no es un obligatorio', async () => {
+    await post(bodyValido({ observacion: '' })).expect(201);
+    expect(create).toHaveBeenCalled();
+  });
+
+  it('400 si nombreCliente supera 120 caracteres', async () => {
+    await post(bodyValido({ nombreCliente: 'x'.repeat(121) })).expect(400);
     expect(create).not.toHaveBeenCalled();
   });
 

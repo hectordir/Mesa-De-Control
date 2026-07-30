@@ -1,40 +1,47 @@
-import { cx } from '../../../components/ui/cx'
+import { cx } from "../../../components/ui/cx";
 import type {
   GestionRow,
   HistorialSortKey,
   SortDir,
-} from '../../../lib/api/types'
-import { esZebra, formatFecha } from '../lib/historial.presentation'
-import { ResultadoChip } from './ResultadoChip'
+} from "../../../lib/api/types";
+import {
+  esZebra,
+  formatAbonado,
+  formatFecha,
+  textoODash,
+} from "../lib/historial.presentation";
+import { ResultadoChip } from "./ResultadoChip";
 
 interface HistorialTableProps {
-  rows: GestionRow[]
-  sortKey: HistorialSortKey
-  sortDir: SortDir
-  onSort: (key: HistorialSortKey) => void
-  onOpenRow: (row: GestionRow) => void
+  rows: GestionRow[];
+  sortKey: HistorialSortKey;
+  sortDir: SortDir;
+  onSort: (key: HistorialSortKey) => void;
+  onOpenRow: (row: GestionRow) => void;
 }
 
 interface Columna {
   /** Clave ordenable, o `null` si la columna no ordena. */
-  key: HistorialSortKey | null
-  label: string
+  key: HistorialSortKey | null;
+  label: string;
 }
 
 const COLUMNAS: Columna[] = [
-  { key: null, label: 'Código' },
-  { key: 'operador', label: 'Operador' },
-  { key: 'abonado', label: 'Abonado' },
-  { key: null, label: 'Teléfono' },
-  { key: 'zona', label: 'Zona' },
-  { key: 'resultado', label: 'Resultado' },
-  { key: 'fecha', label: 'Fecha' },
-  { key: null, label: 'Hora' },
-]
+  // Identificador Fibex del cliente: es el dato que identifica la fila para el
+  // usuario. El back acepta `sortKey=abonado`, así que la columna ordena.
+  { key: "abonado", label: "Abonado" },
+  { key: "operador", label: "Operador" },
+  { key: "nombreCliente", label: "Cliente" },
+  { key: null, label: "Teléfono" },
+  { key: "zona", label: "Zona" },
+  { key: "resultado", label: "Resultado" },
+  { key: "fecha", label: "Fecha" },
+  { key: null, label: "Hora" },
+];
 
 function flecha(activa: boolean, dir: SortDir): string {
-  if (!activa) return '↕'
-  return dir === 'asc' ? '▲' : '▼'
+  if (!activa) return "↕";
+  return dir === "asc" ? "▲" : "▼";
 }
 
 /** Tabla densa: header sticky, orden por columna server-side y zebra. */
@@ -51,7 +58,7 @@ export function HistorialTable({
         <thead>
           <tr className="border-b border-border">
             {COLUMNAS.map((col) => {
-              const activa = col.key !== null && col.key === sortKey
+              const activa = col.key !== null && col.key === sortKey;
               return (
                 <th
                   key={col.label}
@@ -64,14 +71,16 @@ export function HistorialTable({
                       onClick={() => onSort(col.key as HistorialSortKey)}
                       aria-sort={
                         activa
-                          ? sortDir === 'asc'
-                            ? 'ascending'
-                            : 'descending'
-                          : 'none'
+                          ? sortDir === "asc"
+                            ? "ascending"
+                            : "descending"
+                          : "none"
                       }
                       className={cx(
-                        'inline-flex items-center gap-1 uppercase',
-                        activa ? 'text-text-primary' : 'hover:text-text-secondary',
+                        "inline-flex items-center gap-1 uppercase",
+                        activa
+                          ? "text-text-primary"
+                          : "hover:text-text-secondary",
                       )}
                     >
                       {col.label}
@@ -83,7 +92,7 @@ export function HistorialTable({
                     col.label
                   )}
                 </th>
-              )
+              );
             })}
           </tr>
         </thead>
@@ -93,12 +102,12 @@ export function HistorialTable({
               key={row.id}
               onClick={() => onOpenRow(row)}
               className={cx(
-                'cursor-pointer border-b border-border-subtle transition-colors hover:bg-surface-elevated',
-                esZebra(index) && 'bg-bg/40',
+                "cursor-pointer border-b border-border-subtle transition-colors hover:bg-surface-elevated",
+                esZebra(index) && "bg-bg/40",
               )}
             >
               <td className="px-3 py-[10px] font-medium text-text-secondary">
-                {row.codigo}
+                {formatAbonado(row.abonado)}
               </td>
               <td className="px-3 py-[10px]">
                 <span className="flex items-center gap-2">
@@ -108,12 +117,16 @@ export function HistorialTable({
                   >
                     {row.operador.iniciales}
                   </span>
-                  <span className="text-text-primary">{row.operador.nombre}</span>
+                  <span className="text-text-primary">
+                    {row.operador.nombre}
+                  </span>
                 </span>
               </td>
-              <td className="px-3 py-[10px] text-text-primary">{row.abonado}</td>
+              <td className="px-3 py-[10px] text-text-primary">
+                {textoODash(row.nombreCliente)}
+              </td>
               <td className="px-3 py-[10px] tabular-nums text-text-secondary">
-                {row.telefono}
+                {textoODash(row.telefono)}
               </td>
               <td className="px-3 py-[10px] text-text-secondary">{row.zona}</td>
               <td className="px-3 py-[10px]">
@@ -130,5 +143,5 @@ export function HistorialTable({
         </tbody>
       </table>
     </div>
-  )
+  );
 }

@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { DashboardService } from './dashboard.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { mesActualVE } from '../common/time/index';
+import { sinHoraLocal } from '../common/time/sin-hora-local';
 
 type GroupByArgs = { by: string[]; take?: number; where?: unknown };
 type CountRow = Record<string, unknown> & { _count: { _all: number } };
@@ -100,10 +102,20 @@ describe('DashboardService · analisisMensual', () => {
       await setup({});
       const { periodo } = await service.analisisMensual();
 
-      const hoy = new Date();
-      expect(periodo).toBe(
-        `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}`,
-      );
+      expect(periodo).toBe(mesActualVE());
+    });
+
+    // El cambio de mes ocurre a las 04:00 UTC (medianoche en Caracas),
+    // sin importar la zona en la que corra el proceso.
+    it('el mes en curso es el de Caracas, sin usar la hora local del proceso', async () => {
+      await setup({});
+      jest.useFakeTimers().setSystemTime(new Date('2026-08-01T02:00:00.000Z'));
+      try {
+        const { periodo } = await sinHoraLocal(() => service.analisisMensual());
+        expect(periodo).toBe('2026-07');
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it('acota el mes pedido con un rango semiabierto [inicio, mes siguiente)', async () => {

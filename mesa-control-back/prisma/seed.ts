@@ -4,15 +4,24 @@ import { PrismaPg } from '@prisma/adapter-pg';
 
 import { PrismaClient } from '../src/generated/prisma/client';
 import { sembrarAtenciones } from '../src/seed/atenciones';
+import {
+  FilaDemo,
+  ParcheDemo,
+  planBackfillDemo,
+  PREFIJOS_DEMO,
+} from '../src/seed/backfill-demo';
 import { sembrarCanales } from '../src/seed/canales';
 import { diaLocal } from '../src/seed/dia';
+import { construirEneroDemo } from '../src/seed/enero-demo';
 import { construirGestionesDemo } from '../src/seed/gestiones-demo';
 import { construirGestionesMensuales } from '../src/seed/gestiones-mensuales';
 import { sembrarOperadoresDummy } from '../src/seed/operadores-dummy';
 import { construirSupervisionDemo } from '../src/seed/supervision-demo';
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL as string }),
+  adapter: new PrismaPg({
+    connectionString: process.env.DATABASE_URL as string,
+  }),
 });
 
 const PASSWORD = 'Fibex2026!';
@@ -25,12 +34,36 @@ const LOTE = 1000;
  * las filas dan 78/66/59/71/68 y las columnas los 198/54/31/38/21 del diseño.
  */
 const OPERADORES = [
-  { email: 'operador@fibex.com', name: 'Operador Demo', reparto: [0, 0, 0, 0, 0] },
-  { email: 'jhon.rivas@fibex.com', name: 'Jhon Rivas', reparto: [46, 12, 7, 9, 4] },
-  { email: 'maria.leon@fibex.com', name: 'María León', reparto: [38, 10, 6, 8, 4] },
-  { email: 'carlos.diaz@fibex.com', name: 'Carlos Díaz', reparto: [33, 10, 6, 7, 3] },
-  { email: 'ana.quintero@fibex.com', name: 'Ana Quintero', reparto: [41, 11, 6, 8, 5] },
-  { email: 'luis.parra@fibex.com', name: 'Luis Parra', reparto: [40, 11, 6, 6, 5] },
+  {
+    email: 'operador@fibex.com',
+    name: 'Operador Demo',
+    reparto: [0, 0, 0, 0, 0],
+  },
+  {
+    email: 'jhon.rivas@fibex.com',
+    name: 'Jhon Rivas',
+    reparto: [46, 12, 7, 9, 4],
+  },
+  {
+    email: 'maria.leon@fibex.com',
+    name: 'María León',
+    reparto: [38, 10, 6, 8, 4],
+  },
+  {
+    email: 'carlos.diaz@fibex.com',
+    name: 'Carlos Díaz',
+    reparto: [33, 10, 6, 7, 3],
+  },
+  {
+    email: 'ana.quintero@fibex.com',
+    name: 'Ana Quintero',
+    reparto: [41, 11, 6, 8, 5],
+  },
+  {
+    email: 'luis.parra@fibex.com',
+    name: 'Luis Parra',
+    reparto: [40, 11, 6, 6, 5],
+  },
 ];
 
 /**
@@ -106,29 +139,117 @@ async function backfillDemoRestantes(): Promise<number> {
   return actualizadas;
 }
 
+/** Sentencias por transacción al aplicar el plan de backfill demo. */
+const LOTE_SENTENCIAS = 500;
+
 /**
- * Rellena `abonado` en las filas demo de HOY que aún lo tengan vacío (creadas
- * antes de que el builder lo poblara; `skipDuplicates` no actualiza). Idempotente:
- * solo toca `abonado = ''`. Agrupa por el valor destino para hacer pocos
- * `updateMany` en vez de uno por fila. No toca gestiones reales ni el histórico.
+ * Homologa las filas demo ya persistidas: `abonado` pasa de zona a identificador
+ * Fibex y se rellenan `detalle`/`solucion`/`tipo`/`observacion` vacíos (el
+ * `createMany({ skipDuplicates })` nunca actualiza lo existente, así que las
+ * jornadas de días anteriores se quedaron atrás). El plan lo calcula
+ * `planBackfillDemo` —convergente y solo sobre ids del seed—; aquí solo se
+ * ejecuta, agrupando parches idénticos y en transacciones por lotes.
  */
-async function backfillAbonado(
-  filas: { id: string; abonado: string }[],
+async function backfillDemo(
+  generadas: readonly FilaDemo[],
+): Promise<{ filas: number; escrituras: number }> {
+  const existentes = await prisma.gestion.findMany({
+    where: { OR: PREFIJOS_DEMO.map((p) => ({ id: { startsWith: p } })) },
+    select: {
+      id: true,
+      abonado: true,
+      detalle: true,
+      solucion: true,
+      tipo: true,
+      observacion: true,
+    },
+  });
+
+  const plan = planBackfillDemo(existentes, generadas);
+
+  const grupos = new Map<
+    string,
+    { datos: ParcheDemo['datos']; ids: string[] }
+  >();
+  for (const { id, datos } of plan) {
+    const clave = JSON.stringify(datos);
+    const grupo = grupos.get(clave) ?? { datos, ids: [] };
+    grupo.ids.push(id);
+    grupos.set(clave, grupo);
+  }
+
+  const sentencias = [...grupos.values()].flatMap(({ datos, ids }) =>
+    Array.from({ length: Math.ceil(ids.length / LOTE) }, (_, i) =>
+      prisma.gestion.updateMany({
+        where: { id: { in: ids.slice(i * LOTE, (i + 1) * LOTE) } },
+        data: datos,
+      }),
+    ),
+  );
+
+  let escrituras = 0;
+  for (let i = 0; i < sentencias.length; i += LOTE_SENTENCIAS) {
+    const res = await prisma.$transaction(
+      sentencias.slice(i, i + LOTE_SENTENCIAS),
+    );
+    escrituras += res.reduce((a, r) => a + r.count, 0);
+  }
+
+  return { filas: plan.length, escrituras };
+}
+
+/**
+ * Rellena `nombreCliente` en filas demo que ya existían antes de la columna
+ * (`skipDuplicates` no actualiza). Idempotente: solo toca `nombreCliente = ''`.
+ * Agrupa por el valor destino (pocos cientos de nombres) y trocea los ids para
+ * no rozar el límite de parámetros de Postgres.
+ */
+async function backfillNombreCliente(
+  filas: { id: string; nombreCliente: string }[],
 ): Promise<number> {
   const grupos = new Map<string, string[]>();
   for (const f of filas) {
-    (grupos.get(f.abonado) ?? grupos.set(f.abonado, []).get(f.abonado)!).push(
-      f.id,
-    );
+    const clave = f.nombreCliente;
+    (grupos.get(clave) ?? grupos.set(clave, []).get(clave)!).push(f.id);
   }
 
   let actualizadas = 0;
-  for (const [abonado, ids] of grupos) {
-    const { count } = await prisma.gestion.updateMany({
-      where: { id: { in: ids }, abonado: '' },
-      data: { abonado },
-    });
-    actualizadas += count;
+  for (const [nombreCliente, ids] of grupos) {
+    for (let i = 0; i < ids.length; i += LOTE) {
+      const { count } = await prisma.gestion.updateMany({
+        where: { id: { in: ids.slice(i, i + LOTE) }, nombreCliente: '' },
+        data: { nombreCliente },
+      });
+      actualizadas += count;
+    }
+  }
+  return actualizadas;
+}
+
+/**
+ * Rellena `telefono` en filas demo creadas antes de que los builders lo poblaran
+ * (`skipDuplicates` no actualiza). Idempotente: solo toca `telefono = ''`, así que
+ * correr el seed dos veces no reasigna números ya puestos. Un `updateMany` por
+ * número (troceado) — no hay agrupación posible: cada índice tiene el suyo.
+ */
+async function backfillTelefono(
+  filas: { id: string; telefono: string }[],
+): Promise<number> {
+  const grupos = new Map<string, string[]>();
+  for (const f of filas) {
+    const clave = f.telefono;
+    (grupos.get(clave) ?? grupos.set(clave, []).get(clave)!).push(f.id);
+  }
+
+  let actualizadas = 0;
+  for (const [telefono, ids] of grupos) {
+    for (let i = 0; i < ids.length; i += LOTE) {
+      const { count } = await prisma.gestion.updateMany({
+        where: { id: { in: ids.slice(i, i + LOTE) }, telefono: '' },
+        data: { telefono },
+      });
+      actualizadas += count;
+    }
   }
   return actualizadas;
 }
@@ -191,13 +312,6 @@ async function main() {
     where: { fecha: new Date(`${fecha}T00:00:00.000Z`) },
   });
 
-  // Rellena el abonado de las filas de hoy que se crearon con abonado vacío
-  // (alimentan la lista de Depuración de Supervisión).
-  const abonadosHoy = await backfillAbonado(gestiones);
-  if (abonadosHoy > 0) {
-    console.log(`Seed depuración — ${abonadosHoy} abonados rellenados hoy`);
-  }
-
   // Admin · Supervisión: gestiones de hoy en las 10 zonas de La Guaira + escaladas
   // abiertas de 1–5 días (Bandeja N2, SLA, mapa). Idempotente (ids `sup-…` fijos).
   const supervisionGestiones = construirSupervisionDemo(
@@ -228,11 +342,72 @@ async function main() {
     nuevasMensuales += nuevas;
   }
 
+  // Banco de casos borde de enero 2026: pocas gestiones, muchas formas distintas
+  // (día vacío, día de 1 gestión, dona al 100 %, metas incumplidas, 10 operadores…).
+  // Usa TODO el pool de operadores, incluidos los dummy, que hasta ahora no tenían
+  // ninguna gestión. Enero está fuera de la ventana de `construirGestionesMensuales`
+  // (4 meses cerrados + el mes en curso), así que no pisa nada ya sembrado.
+  const poolEnero = [
+    ...usuarios
+      .filter((u) => u.email !== 'operador@fibex.com')
+      .map((u) => u.id),
+    ...dummies.map((u) => u.id),
+  ];
+  const enero = construirEneroDemo(poolEnero);
+  let nuevasEnero = 0;
+  for (let i = 0; i < enero.length; i += LOTE) {
+    const { count: nuevas } = await prisma.gestion.createMany({
+      data: enero.slice(i, i + LOTE),
+      skipDuplicates: true,
+    });
+    nuevasEnero += nuevas;
+  }
+  console.log(
+    `Seed enero (casos borde) — ${enero.length} gestiones generadas · ${nuevasEnero} nuevas en base`,
+  );
+
   console.log(
     `Seed OK — ${usuarios.length} usuarios · ${dummies.length} operadores dummy · ${count} gestiones nuevas · ${total} gestiones el ${fecha}`,
   );
   console.log(
     `Seed mensual — ${mensuales.length} gestiones generadas · ${nuevasMensuales} nuevas en base`,
+  );
+
+  // Backfill de nombreCliente en filas demo anteriores a la columna.
+  const nombresRellenados = await backfillNombreCliente([
+    ...gestiones,
+    ...supervisionGestiones,
+    ...mensuales,
+    ...enero,
+  ]);
+  if (nombresRellenados > 0) {
+    console.log(
+      `Seed registro — ${nombresRellenados} nombreCliente rellenados`,
+    );
+  }
+
+  // Backfill de telefono en filas demo anteriores a que el seed lo poblara.
+  const telefonosRellenados = await backfillTelefono([
+    ...gestiones,
+    ...supervisionGestiones,
+    ...mensuales,
+    ...enero,
+  ]);
+  if (telefonosRellenados > 0) {
+    console.log(`Seed registro — ${telefonosRellenados} teléfonos rellenados`);
+  }
+
+  // Homologa TODAS las filas demo ya persistidas (incluidas las jornadas de días
+  // anteriores, que ningún builder vuelve a generar): abonado Fibex en vez de
+  // zona y detalle/solucion/tipo/observacion sin huecos. Convergente.
+  const { filas: filasDemo, escrituras } = await backfillDemo([
+    ...gestiones,
+    ...supervisionGestiones,
+    ...mensuales,
+    ...enero,
+  ]);
+  console.log(
+    `Seed demo — ${filasDemo} filas homologadas (abonado/detalle/solucion/tipo/observacion) · ${escrituras} escrituras`,
   );
 
   // Backfill de canal/duracion en filas históricas anteriores a estas columnas.

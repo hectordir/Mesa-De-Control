@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { GrupoProps } from './GrupoDatos'
-import { MOTIVO_OPCIONES, ZONA_OPCIONES } from '../opciones'
+import { MOTIVO_OPCIONES, ZONA_OPCIONES, conValorActual } from '../opciones'
 import { SelectField, TextareaField } from './campos'
 
 /** Grupo 3: clasificación (zona, motivo, observación) + acciones del footer. */
@@ -21,7 +21,7 @@ export function GrupoClasificacion({
           value={values.zona}
           error={errors.zona}
           placeholder="Selecciona una zona"
-          options={ZONA_OPCIONES}
+          options={conValorActual(ZONA_OPCIONES, values.zona)}
           onChange={(v) => setField('zona', v)}
         />
         <SelectField
@@ -29,7 +29,7 @@ export function GrupoClasificacion({
           value={values.motivo}
           error={errors.motivo}
           placeholder="Selecciona un motivo"
-          options={MOTIVO_OPCIONES}
+          options={conValorActual(MOTIVO_OPCIONES, values.motivo)}
           onChange={(v) => setField('motivo', v)}
         />
       </div>

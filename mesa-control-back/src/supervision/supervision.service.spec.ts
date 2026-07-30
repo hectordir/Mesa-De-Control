@@ -1,5 +1,6 @@
 import { PrismaService } from '../prisma/prisma.service';
 import { SupervisionService } from './supervision.service';
+import { sinHoraLocal } from '../common/time/sin-hora-local';
 
 const count = (n: number) => ({ _count: { _all: n } });
 const FECHA = '2026-07-22';
@@ -143,6 +144,20 @@ function mockPrisma() {
 }
 
 describe('SupervisionService', () => {
+  // El "hoy" por defecto sale de America/Caracas, no de la zona del proceso.
+  it('el día por defecto es el de Caracas, sin usar la hora local del proceso', async () => {
+    const { prisma } = mockPrisma();
+    jest.useFakeTimers().setSystemTime(new Date('2026-07-18T02:30:00.000Z'));
+    try {
+      const res = await sinHoraLocal(() =>
+        new SupervisionService(prisma).resumen(),
+      );
+      expect(res.fecha).toBe('2026-07-17');
+    } finally {
+      jest.useRealTimers();
+    }
+  });
+
   it('calcula KPIs con el mapeo de enum y los deltas vs. día anterior', async () => {
     const { prisma } = mockPrisma();
     const res = await new SupervisionService(prisma).resumen(FECHA);

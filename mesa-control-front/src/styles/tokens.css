@@ -8,6 +8,10 @@
 :root,
 [data-theme="dark"],
 .dark {
+  /* Controles nativos (desplegables de <select>, scrollbars, calendario de
+     <input type=date>) pintados por el navegador con la paleta del tema. */
+  color-scheme: dark;
+
   /* surfaces */
   --color-bg: #0B0F1A;
   --color-surface: #111826;
@@ -50,6 +54,8 @@
 
 [data-theme="light"],
 .light {
+  color-scheme: light;
+
   /* surfaces */
   --color-bg: #F6F8FB;
   --color-surface: #FFFFFF;

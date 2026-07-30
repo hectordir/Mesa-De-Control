@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import {
   ADMIN_HEX,
+  todayIso,
   buildKpis,
   diasColor,
   diasLabel,
@@ -130,5 +131,25 @@ describe('admin.presentation · fechas y KPIs', () => {
     expect(cards[0]).toMatchObject({ label: 'Atendidos hoy', value: '142', delta: '+12' })
     expect(cards[2]).toMatchObject({ label: 'Escalados a NOC', value: '9', delta: '-3' })
     expect(cards[3]).toMatchObject({ label: 'SLA cumplido', unit: '%' })
+  })
+})
+
+describe('todayIso · día de la operación en Venezuela', () => {
+  const TZ_ORIGINAL = process.env.TZ
+
+  beforeEach(() => {
+    // Navegador en UTC: a las 02:00 Z todavía es el día anterior en Caracas.
+    process.env.TZ = 'UTC'
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-07-18T02:00:00.000Z'))
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+    process.env.TZ = TZ_ORIGINAL
+  })
+
+  it('no adelanta el día para un navegador al este de Caracas', () => {
+    expect(new Date().getDate()).toBe(18) // guarda: el host sí está en UTC
+    expect(todayIso()).toBe('2026-07-17')
   })
 })

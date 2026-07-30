@@ -102,9 +102,10 @@ describe('anchoBarra', () => {
 })
 
 describe('horaCorta', () => {
-  it('muestra la hora de operación tal como llega, sin desfase de zona', () => {
+  it('muestra la hora de la operación (America/Caracas) del instante', () => {
     expect(horaCorta('2026-07-17T10:42:00-04:00')).toBe('10:42')
-    expect(horaCorta('2026-07-17T09:05:00.000Z')).toBe('09:05')
+    // El backend envía este campo como ISO UTC: 09:05 Z son 05:05 en Caracas.
+    expect(horaCorta('2026-07-17T09:05:00.000Z')).toBe('05:05')
   })
 
   it('devuelve cadena vacía si el formato no es ISO', () => {

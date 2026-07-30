@@ -16,7 +16,7 @@ const crearMock = vi.mocked(crearAtencion)
 
 const payload: CrearAtencionPayload = {
   operadorId: 'u-1',
-  abonado: 'Cond. Los Robles',
+  abonado: '1002451',
   canal: 'ESPN',
   motivo: 'Sin señal',
   solucion: 'Reinicio de ONU',

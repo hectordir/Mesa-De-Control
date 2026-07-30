@@ -25,7 +25,7 @@ const resumen: SupervisionResumen = {
     { key: '4+', label: '4+ días', count: 2 },
   ],
   heatmap: { motivos: ['Falla LOS'], filas: [{ zona: 'Caraballeda', celdas: [4], total: 4 }] },
-  depuracion: [{ id: 'g-1', fecha: '2026-07-23', operador: 'José V.', abonado: 'LG18823' }],
+  depuracion: [{ id: 'g-1', fecha: '2026-07-23', operador: 'José V.', abonado: '1004871' }],
 }
 
 describe('API de Supervisión', () => {

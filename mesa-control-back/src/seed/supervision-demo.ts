@@ -1,5 +1,11 @@
 import { CanalGestion, ResultadoGestion } from '../generated/prisma/enums';
-import { canalDuracionPorIndice } from './gestiones-demo';
+import {
+  abonadoPorIndice,
+  atencionPorIndice,
+  canalDuracionPorIndice,
+  nombreClientePorIndice,
+  telefonoPorIndice,
+} from './gestiones-demo';
 
 /** Las 10 parroquias de La Guaira del diseño de Admin · Supervisión. */
 export const ZONAS_GUAIRA = [
@@ -50,7 +56,20 @@ export interface SupervisionGestion {
   ubicacion: string;
   fecha: Date;
   createdAt: Date;
+  /** Identificador Fibex del abonado (7 dígitos). Determinista por posición. */
   abonado: string;
+  /** Detalle de la orden (catálogo del front). */
+  detalle: string;
+  /** Solución aplicada (catálogo del front). */
+  solucion: string;
+  /** Tipo de resolución (catálogo del front). */
+  tipo: string;
+  /** Nota de cierre. */
+  observacion: string;
+  /** Nombre del cliente (Registro). Determinista por posición. */
+  nombreCliente: string;
+  /** Teléfono de contacto `04XX-XXX-XXXX`. Determinista por posición. */
+  telefono: string;
   /** Canal de la gestión: sin él, los filtros del Historial descartan estas filas. */
   canal: CanalGestion;
   /** Duración en minutos (2–30), determinista por posición. */
@@ -91,7 +110,10 @@ export function construirSupervisionDemo(
       ubicacion: zona,
       fecha: fechaDia,
       createdAt,
-      abonado: `Abonado ${zona} #${String(k + 1).padStart(2, '0')}`,
+      abonado: abonadoPorIndice(global),
+      nombreCliente: nombreClientePorIndice(global),
+      telefono: telefonoPorIndice(global),
+      ...atencionPorIndice(global),
       ...canalDuracionPorIndice(global),
     });
     global += 1;

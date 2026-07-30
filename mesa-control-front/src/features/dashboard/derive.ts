@@ -1,4 +1,5 @@
 import type { DistribucionItem, OperadorResumen } from '../../lib/api/types'
+import { horaVE } from '../../lib/tiempoVE'
 import { resultadoMeta } from './resultado'
 
 /** Efectividad de mesa en porcentaje entero; sin clientes atendidos es 0. */
@@ -99,9 +100,11 @@ export function anchoBarra(total: number, maximo: number): number {
 }
 
 /**
- * Hora de pared tal y como la envía el backend (`HH:mm`), sin reinterpretarla
- * en la zona del navegador: la mesa opera siempre en la hora de la operación.
+ * `HH:mm` del instante en la hora de la operación (America/Caracas).
+ *
+ * `ActividadItem.hora` viaja como instante ISO en UTC: ni la zona del navegador
+ * ni el texto crudo del ISO sirven, hay que convertir con la zona explícita.
  */
 export function horaCorta(iso: string): string {
-  return /T(\d{2}:\d{2})/.exec(iso)?.[1] ?? ''
+  return horaVE(iso)
 }

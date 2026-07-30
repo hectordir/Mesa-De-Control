@@ -1,5 +1,15 @@
 import { ResultadoGestion } from '../generated/prisma/enums';
-import { CANALES, entrelazar, GestionDemo, MOTIVOS } from './gestiones-demo';
+import {
+  abonadoPorIndice,
+  atencionPorIndice,
+  CANALES,
+  entrelazar,
+  GestionDemo,
+  MOTIVOS,
+  nombreClientePorIndice,
+  telefonoPorIndice,
+} from './gestiones-demo';
+import { diaLocal } from './dia';
 
 /** Las 21 zonas del heatmap del diseño (`AnalisisMensual.dc.html`, array `zones`). */
 export const ZONAS: readonly string[] = [
@@ -127,7 +137,9 @@ export function desplazarPeriodo(periodo: string, delta: number): string {
  * el día de hoy es territorio exclusivo del seed diario del Monitor Diario.
  */
 export function mesesAnalisis(hoy: Date): MesDemo[] {
-  const actual = `${hoy.getFullYear()}-${dosDigitos(hoy.getMonth() + 1)}`;
+  // Día calendario venezolano: la misma convención que `diaLocal` y los dashboards.
+  const [anio, mes, dia] = diaLocal(hoy).split('-');
+  const actual = `${anio}-${mes}`;
 
   const cerrados = VOLUMEN_CERRADO.map((volumen, i) => {
     const periodo = desplazarPeriodo(actual, i - VOLUMEN_CERRADO.length);
@@ -139,7 +151,7 @@ export function mesesAnalisis(hoy: Date): MesDemo[] {
     };
   });
 
-  const diaMaximo = hoy.getDate() - 1;
+  const diaMaximo = Number(dia) - 1;
   return [
     ...cerrados,
     {
@@ -283,8 +295,11 @@ export function construirMesDemo(
       resultado,
       motivo,
       ubicacion,
-      // Abonado legible y determinista por índice (consistencia con el demo diario).
-      abonado: `${ubicacion} · Casa ${String((i % 60) + 1).padStart(2, '0')}`,
+      // Identificador Fibex del abonado; la zona ya viaja en `ubicacion`.
+      abonado: abonadoPorIndice(i),
+      nombreCliente: nombreClientePorIndice(i),
+      telefono: telefonoPorIndice(i),
+      ...atencionPorIndice(i),
       fecha,
       createdAt,
       canal,

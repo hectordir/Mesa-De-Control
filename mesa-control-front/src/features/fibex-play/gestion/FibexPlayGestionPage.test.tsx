@@ -34,7 +34,7 @@ const CON_DATOS: GestionResumen = {
     {
       id: 'a-1',
       operador: 'Jhon Rivas',
-      abonado: 'Cond. Los Robles',
+      abonado: '1002451',
       canal: 'ESPN',
       motivo: 'Sin señal',
       solucion: 'Reinicio de ONU',
@@ -122,7 +122,7 @@ describe('FibexPlayGestionPage · con datos', () => {
 
     const bitacora = panel(/Bitácora de Atención/i)
     expect(within(bitacora).getByText('Jhon Rivas')).toBeInTheDocument()
-    expect(within(bitacora).getByText('Cond. Los Robles')).toBeInTheDocument()
+    expect(within(bitacora).getByText('1002451')).toBeInTheDocument()
     expect(within(bitacora).getByText('Solucionado')).toBeInTheDocument()
   })
 })

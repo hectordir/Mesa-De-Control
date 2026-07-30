@@ -7,6 +7,7 @@ import {
   FallaCanalDto,
   FibexPlayResumenDto,
 } from './dto/fibex-play-resumen.dto';
+import { formatHoraVE } from '../common/time/index';
 
 /** Orden fijo de la leyenda del donut: no depende de los datos. */
 const SEVERIDADES: SeveridadIncidencia[] = ['CRITICA', 'ALTA', 'MEDIA'];
@@ -94,15 +95,10 @@ export class FibexPlayService {
         categoria: c.categoria,
         tipoIncidencia: c.tipoIncidencia,
         severidad: c.severidad,
-        hora: FibexPlayService.horaHHmm(c.detectadoEn),
+        // `hora` se muestra al usuario ⇒ hora de Caracas.
+        hora: formatHoraVE(c.detectadoEn),
+        // `detectadoEn` es el instante crudo para el front ⇒ ISO UTC.
         detectadoEn: c.detectadoEn.toISOString(),
       }));
-  }
-
-  /** HH:mm de un instante, en UTC (determinista y alineado con detectadoEn ISO). */
-  private static horaHHmm(fecha: Date): string {
-    const hh = String(fecha.getUTCHours()).padStart(2, '0');
-    const mm = String(fecha.getUTCMinutes()).padStart(2, '0');
-    return `${hh}:${mm}`;
   }
 }

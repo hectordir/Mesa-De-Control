@@ -23,12 +23,20 @@ export class GestionListOperadorDto {
   iniciales!: string;
 }
 
+export class GestionListEditorDto {
+  @ApiProperty({ format: 'uuid' })
+  id!: string;
+
+  @ApiProperty({ example: 'Ana Suárez' })
+  nombre!: string;
+}
+
 export class GestionListItemDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
   @ApiProperty({
-    example: 'GST-40921',
+    example: 'LG-40921',
     description: 'Código legible derivado del id (estable y determinista).',
   })
   codigo!: string;
@@ -38,6 +46,9 @@ export class GestionListItemDto {
 
   @ApiProperty({ example: 'Cond. Los Robles' })
   abonado!: string;
+
+  @ApiProperty({ example: 'María Pérez', description: 'Nombre del cliente' })
+  nombreCliente!: string;
 
   @ApiProperty({ example: '0412-118-4420' })
   telefono!: string;
@@ -69,6 +80,31 @@ export class GestionListItemDto {
 
   @ApiProperty({ example: 'Ticket generado a NOC' })
   solucion!: string;
+
+  @ApiProperty({
+    example: '18/07/2026',
+    nullable: true,
+    description: 'DD/MM/YYYY de updatedAt; null si nunca se editó.',
+  })
+  modificadaFecha!: string | null;
+
+  @ApiProperty({
+    example: '11:47 a. m.',
+    nullable: true,
+    description:
+      'Hora de updatedAt en formato 12h; null si nunca se editó. Mismo ' +
+      'criterio de zona horaria que `hora`.',
+  })
+  modificadaHora!: string | null;
+
+  @ApiProperty({
+    type: GestionListEditorDto,
+    nullable: true,
+    description:
+      'Autor de la última edición. null si nunca se editó o si el usuario ' +
+      'fue eliminado (FK ON DELETE SET NULL).',
+  })
+  editor!: GestionListEditorDto | null;
 }
 
 export class GestionesCountsDto {

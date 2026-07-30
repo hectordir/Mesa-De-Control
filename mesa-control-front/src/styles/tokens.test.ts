@@ -27,6 +27,13 @@ describe('tokens.css', () => {
     )
   })
 
+  it('declara color-scheme por tema para los controles nativos', () => {
+    expect(blockContaining(':root')).toContain('color-scheme: dark;')
+    expect(blockContaining('[data-theme="light"]')).toContain(
+      'color-scheme: light;',
+    )
+  })
+
   it('mantiene los tokens semánticos clave en ambos temas', () => {
     const dark = blockContaining(':root')
     const light = blockContaining('[data-theme="light"]')

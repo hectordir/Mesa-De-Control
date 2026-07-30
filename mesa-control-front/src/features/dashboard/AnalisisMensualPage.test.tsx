@@ -8,6 +8,8 @@ import { fetchAnalisisMensual } from '../../lib/api/dashboard'
 import type { AnalisisMensualResponse } from '../../lib/api/types'
 import { createTestQueryClient } from '../../test/renderWithProviders'
 import { useAuthStore } from '../../stores/auth.store'
+import { useDashboardDateStore } from '../../stores/dashboardDate.store'
+import { hoyISO } from './hooks/useOperationDay'
 
 vi.mock('../../lib/api/dashboard', () => ({
   fetchAnalisisMensual: vi.fn(),
@@ -88,6 +90,9 @@ beforeEach(() => {
   vi.clearAllMocks()
   localStorage.clear()
   document.documentElement.setAttribute('data-theme', 'dark')
+  // El periodo se deriva de un store global que sobrevive entre tests: si no se
+  // restablece, el mes elegido por un test filtra al siguiente.
+  useDashboardDateStore.setState({ fecha: hoyISO() })
   useAuthStore.setState({
     token: 'jwt-123',
     user: {

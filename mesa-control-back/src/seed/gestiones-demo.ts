@@ -40,6 +40,160 @@ export const UBICACIONES = [
   'Urb. La Granja',
 ];
 
+/** Nombres de pila del catálogo demo de clientes. */
+const NOMBRES = [
+  'María',
+  'José',
+  'Ana',
+  'Carlos',
+  'Luisa',
+  'Pedro',
+  'Carmen',
+  'Rafael',
+  'Yolanda',
+  'Miguel',
+  'Daniela',
+  'Andrés',
+  'Rosa',
+  'Jesús',
+  'Gabriela',
+  'Alberto',
+  'Patricia',
+  'Ramón',
+  'Vanessa',
+  'Óscar',
+] as const;
+
+/** Apellidos del catálogo demo de clientes. */
+const APELLIDOS = [
+  'Pérez',
+  'Rodríguez',
+  'González',
+  'Hernández',
+  'Marcano',
+  'Blanco',
+  'Sánchez',
+  'Rivas',
+  'Meléndez',
+  'Castillo',
+  'Bermúdez',
+  'Salazar',
+  'Ortega',
+  'Guerrero',
+  'Zambrano',
+  'Aponte',
+  'Silva',
+] as const;
+
+/**
+ * Nombre de cliente plausible y determinista por índice: `NOMBRES` y `APELLIDOS`
+ * tienen tamaños coprimos (20 y 17), así que la combinación no se repite hasta
+ * las 340 posiciones. Sin aleatoriedad → el seed sigue siendo idempotente.
+ */
+export function nombreClientePorIndice(i: number): string {
+  return `${NOMBRES[i % NOMBRES.length]} ${APELLIDOS[i % APELLIDOS.length]}`;
+}
+
+/** Prefijos móviles vigentes en Venezuela. */
+const PREFIJOS_TELEFONO = ['0412', '0414', '0416', '0424', '0426'] as const;
+/** Coprimo de 10^7: `i · PASO mod 10^7` no repite abonado hasta los 10 M. */
+const PASO_TELEFONO = 7_919;
+
+/**
+ * Teléfono venezolano `04XX-XXX-XXXX` determinista por índice: el prefijo rota
+ * entre los 5 móviles y los 7 dígitos salen de una progresión coprima con 10^7,
+ * así que dos índices distintos nunca comparten número. Sin aleatoriedad → el
+ * seed sigue siendo idempotente.
+ */
+export function telefonoPorIndice(i: number): string {
+  const prefijo = PREFIJOS_TELEFONO[i % PREFIJOS_TELEFONO.length];
+  const digitos = String((i * PASO_TELEFONO + 1_234_567) % 10_000_000).padStart(
+    7,
+    '0',
+  );
+  return `${prefijo}-${digitos.slice(0, 3)}-${digitos.slice(3)}`;
+}
+
+/** Coprimo de 9·10^6: `i · PASO mod 9·10^6` no repite en 9 M de índices. */
+const PASO_ABONADO = 4_871;
+
+/**
+ * Identificador del abonado en Fibex: numérico de 7 dígitos, determinista por
+ * índice y sin repetir. El rango arranca en 1 000 000 para que siempre tenga
+ * exactamente 7 dígitos. NO es la zona (que vive en `ubicacion`) ni el id de BD.
+ */
+export function abonadoPorIndice(i: number): string {
+  return String(1_000_000 + ((i * PASO_ABONADO) % 9_000_000));
+}
+
+/**
+ * Catálogos de `detalle`/`solucion`/`tipo`: copia EXACTA de
+ * `mesa-control-front/src/features/registro/opciones.ts`
+ * (`DETALLE_OPCIONES`, `SOLUCION_OPCIONES`, `TIPO_OPCIONES`). Los selects del
+ * front son cerrados: un valor fuera de catálogo sale en blanco al editar.
+ * `gestiones-demo.spec.ts` lee ese archivo y falla si ambos divergen.
+ */
+export const DETALLES: readonly string[] = [
+  'Falla LOS',
+  'Internet Lento',
+  'Sin Internet',
+  'Caídas Seguidas',
+  'No Navega',
+  'Usuario Clave GNT',
+];
+
+export const SOLUCIONES: readonly string[] = [
+  'Reinicio de ONU',
+  'Cambio de potencia',
+  'Reconfiguración remota',
+  'Recableado interno',
+  'Reemplazo de equipo',
+];
+
+export const TIPOS: readonly string[] = [
+  'Mesa',
+  'Soporte 2',
+  'NOC',
+  'Visita técnica',
+];
+
+/** Notas de cierre plausibles; 11 (primo) para variar frente a 6/5/4. */
+export const OBSERVACIONES: readonly string[] = [
+  'Cliente notificado; se agenda seguimiento.',
+  'Se verifica señal en sitio, potencia dentro de rango.',
+  'Cliente reporta intermitencia desde la madrugada.',
+  'Se reinicia el equipo y navega con normalidad.',
+  'Queda pendiente confirmación del cliente.',
+  'Se escala al NOC por falla en el nodo.',
+  'Sin respuesta del abonado; se reintenta más tarde.',
+  'Se orienta al cliente en la configuración del WiFi.',
+  'Corte de fibra en el tramo; cuadrilla en camino.',
+  'Se reprograma la visita técnica a solicitud del cliente.',
+  'Atención cerrada en primera llamada.',
+];
+
+/** Datos de atención de una gestión demo (los que el modal edita con selects). */
+export interface AtencionDemo {
+  detalle: string;
+  solucion: string;
+  tipo: string;
+  observacion: string;
+}
+
+/**
+ * `detalle`/`solucion`/`tipo`/`observacion` deterministas por índice. Los cuatro
+ * catálogos tienen tamaños 6/5/4/11, así que la combinación completa tarda en
+ * repetirse y cada uno recorre todos sus valores. Sin aleatoriedad → idempotente.
+ */
+export function atencionPorIndice(i: number): AtencionDemo {
+  return {
+    detalle: DETALLES[i % DETALLES.length],
+    solucion: SOLUCIONES[i % SOLUCIONES.length],
+    tipo: TIPOS[i % TIPOS.length],
+    observacion: OBSERVACIONES[i % OBSERVACIONES.length],
+  };
+}
+
 /** Primera gestión del día: 12:00 UTC = 08:00 en Venezuela. */
 const INICIO_JORNADA_UTC = 'T12:00:00.000Z';
 /** Separación entre gestiones: 342 · 95 s ≈ 9 h de jornada. */
@@ -63,8 +217,20 @@ export interface GestionDemo {
   canal: CanalGestion;
   /** Duración en minutos (2–30), determinista por índice. */
   duracion: number;
-  /** Abonado (subscriptor) legible para la lista de Depuración. Determinista. */
+  /** Identificador Fibex del abonado (7 dígitos). Determinista por índice. */
   abonado: string;
+  /** Detalle de la orden (catálogo del front). Determinista por índice. */
+  detalle: string;
+  /** Solución aplicada (catálogo del front). Determinista por índice. */
+  solucion: string;
+  /** Tipo de resolución (catálogo del front). Determinista por índice. */
+  tipo: string;
+  /** Nota de cierre. Determinista por índice. */
+  observacion: string;
+  /** Nombre del cliente (Registro). Determinista por índice. */
+  nombreCliente: string;
+  /** Teléfono de contacto `04XX-XXX-XXXX`. Determinista por índice. */
+  telefono: string;
 }
 
 /**
@@ -147,8 +313,11 @@ export function construirGestionesDemo(
       resultado: g.resultado,
       motivo: motivos[i],
       ubicacion,
-      // Abonado legible y determinista (número de casa/apto estable por índice).
-      abonado: `${ubicacion} · Casa ${String((i % 60) + 1).padStart(2, '0')}`,
+      // Identificador Fibex del abonado; la zona ya viaja en `ubicacion`.
+      abonado: abonadoPorIndice(i),
+      nombreCliente: nombreClientePorIndice(i),
+      telefono: telefonoPorIndice(i),
+      ...atencionPorIndice(i),
       fecha: fechaDia,
       createdAt: new Date(inicio + i * CADENCIA_MS),
       ...canalDuracionPorIndice(i),

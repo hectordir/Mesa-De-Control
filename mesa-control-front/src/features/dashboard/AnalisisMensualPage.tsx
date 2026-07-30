@@ -6,13 +6,13 @@ import {
 } from './analisis-mensual.derive'
 import { AnalyticsBlock } from './components/AnalyticsBlock'
 import { AppTopBar } from './components/AppTopBar'
-import { DashboardViewToggle } from './components/DashboardViewToggle'
 import { EffectivenessKpiCard } from './components/EffectivenessKpiCard'
 import { AlertTriangleIcon, RowsIcon } from './components/icons'
 import { IncidentHeatmap } from './components/IncidentHeatmap'
 import { MonthFilter } from './components/MonthFilter'
 import { MonthlyBarChart } from './components/MonthlyBarChart'
 import { MonthlyKpiCard } from './components/MonthlyKpiCard'
+import { PageHeader } from './components/PageHeader'
 import { ErrorState, type EstadoPanel } from './components/PanelStates'
 import { useAnalisisMensual, vacioMensual } from './hooks/useAnalisisMensual'
 import { useMonthFilter } from './hooks/useMonthFilter'
@@ -38,20 +38,12 @@ export default function AnalisisMensualPage() {
     <div className="tabular flex min-h-screen flex-col gap-5 bg-bg p-6 font-sans text-text-primary">
       <AppTopBar />
 
-      <div className="flex flex-wrap items-end justify-between gap-5">
-        <div className="flex flex-col gap-1">
-          <h1 className="text-[24px] font-bold leading-tight tracking-[-.02em]">
-            Análisis Mensual
-          </h1>
-          <p className="text-[13px] text-text-muted">
-            Vista analítica y consolidada · {mes.etiqueta}
-          </p>
-        </div>
-        <div className="flex flex-wrap items-center gap-3">
-          <DashboardViewToggle />
-          <MonthFilter mes={mes} />
-        </div>
-      </div>
+      <PageHeader
+        titulo="Análisis Mensual"
+        subtitulo={`Vista analítica y consolidada · ${mes.etiqueta}`}
+      >
+        <MonthFilter mes={mes} />
+      </PageHeader>
 
       {isError ? (
         <ErrorState

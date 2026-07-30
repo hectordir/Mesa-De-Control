@@ -78,6 +78,8 @@ model User {
 
   gestiones  Gestion[]
   atenciones AtencionApp[]
+  /// Gestiones que este usuario editó (auditoría de `Gestion.updatedBy`).
+  ediciones  Gestion[]     @relation("GestionEditor")
 }
 
 /// Una atención registrada por un operador de la mesa.
@@ -97,6 +99,8 @@ model Gestion {
   // Texto NOT NULL con default '' para no romper el seed histórico (filas previas
   // sin estos campos) ni exigir un reseed: los inserts reales siempre los proveen.
   abonado        String       @default("")
+  /// Nombre del cliente (Registro · Nueva Gestión). Opcional en la API.
+  nombreCliente  String       @default("")
   telefono       String       @default("")
   detalle        String       @default("")
   solucion       String       @default("")
@@ -110,6 +114,12 @@ model Gestion {
   canal          CanalGestion?
   /// Duración de la atención en minutos (opcional).
   duracion       Int?
+  // ── Auditoría de edición (Historial · Editar gestión) ──
+  // Ambos NULL a propósito: `null` = "nunca editada". Deliberadamente SIN
+  // `@updatedAt` — debe reflejar solo ediciones explícitas, no cualquier escritura.
+  updatedAt      DateTime?
+  updatedBy      String?
+  editor         User?         @relation("GestionEditor", fields: [updatedBy], references: [id])
 
   @@index([fecha])
   @@index([operadorId, fecha])

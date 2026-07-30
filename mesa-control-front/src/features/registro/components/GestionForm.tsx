@@ -5,9 +5,7 @@ import { useCrearGestion } from '../hooks/useCrearGestion'
 import { useOperadores } from '../hooks/useOperadores'
 import { toPayload, useGestionForm } from '../hooks/useGestionForm'
 import type { Opcion } from '../opciones'
-import { GrupoClasificacion } from './GrupoClasificacion'
-import { GrupoDatos } from './GrupoDatos'
-import { GrupoUbicacion } from './GrupoUbicacion'
+import { GestionCampos } from './GestionCampos'
 
 /** `<form>` de Nueva Gestión: estado, validación cliente y envío. */
 export function GestionForm({ onGuardado }: { onGuardado: () => void }) {
@@ -49,18 +47,12 @@ export function GestionForm({ onGuardado }: { onGuardado: () => void }) {
 
   return (
     <form className="flex flex-col gap-4" onSubmit={handleSubmit} noValidate>
-      <GrupoDatos
+      <GestionCampos
         values={values}
         errors={errors}
         setField={setField}
         operadores={operadores}
         operadoresLoading={operadoresQuery.isLoading}
-      />
-      <GrupoUbicacion values={values} errors={errors} setField={setField} />
-      <GrupoClasificacion
-        values={values}
-        errors={errors}
-        setField={setField}
         acciones={
           <>
             {crear.isError ? (

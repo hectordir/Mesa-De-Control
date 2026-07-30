@@ -22,7 +22,7 @@ const RESUMEN: GestionResumen = {
     {
       id: 'a-1',
       operador: 'Jhon Rivas',
-      abonado: 'Cond. Los Robles',
+      abonado: '1002451',
       canal: 'ESPN',
       motivo: 'Sin señal',
       solucion: 'Reinicio de ONU',
@@ -74,7 +74,7 @@ describe('crearAtencion', () => {
   it('hace POST con el payload y devuelve el registro creado', async () => {
     const payload: CrearAtencionPayload = {
       operadorId: 'u-1',
-      abonado: 'Cond. Los Robles',
+      abonado: '1002451',
       canal: 'ESPN',
       motivo: 'Sin señal',
       solucion: 'Reinicio de ONU',

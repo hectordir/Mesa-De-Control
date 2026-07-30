@@ -8,9 +8,10 @@ const respuesta: HistorialResponse = {
   items: [
     {
       id: 'clx1',
-      codigo: 'GST-40921',
+      codigo: 'LG-40921',
       operador: { id: 'op-1', nombre: 'Jhon Rivas', iniciales: 'JR' },
-      abonado: 'Cond. Los Robles',
+      abonado: '1002451',
+      nombreCliente: 'María Pérez',
       telefono: '0412-118-4420',
       zona: 'Norte',
       canal: 'TELEGRAM',
@@ -20,6 +21,9 @@ const respuesta: HistorialResponse = {
       duracionMin: 134,
       detalle: 'Corte total de fibra',
       solucion: 'Ticket generado a NOC',
+      modificadaFecha: null,
+      modificadaHora: null,
+      editor: null,
     },
   ],
   total: 248,
@@ -38,7 +42,7 @@ describe('API del Historial General', () => {
     const params = {
       page: 1,
       pageSize: 10,
-      search: 'robles',
+      search: 'pérez',
       resultado: 'ESCALADO_NOC' as const,
       sortKey: 'fecha' as const,
       sortDir: 'desc' as const,

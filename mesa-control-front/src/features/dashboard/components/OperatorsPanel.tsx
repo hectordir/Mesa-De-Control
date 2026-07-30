@@ -1,7 +1,6 @@
 import { useMemo, useState } from 'react'
-import { Button } from '../../../components/ui'
 import type { OperadorResumen } from '../../../lib/api/types'
-import { RowsIcon, SendIcon } from './icons'
+import { RowsIcon } from './icons'
 import { OperatorSearch } from './OperatorSearch'
 import { OperatorsTable } from './OperatorsTable'
 import {
@@ -32,20 +31,26 @@ export function OperatorsPanel({ operadores, estado }: OperatorsPanelProps) {
       subtitulo="Productividad y distribución por persona"
       estado={estado}
       accion={<OperatorSearch value={filtro} onChange={setFiltro} />}
-      pie={
-        <div className="border-t border-border-subtle px-4 py-[14px]">
-          {/* Fuera de alcance del ticket: el envío a Telegram aún no existe. */}
-          <Button
-            disabled
-            className="w-full py-[11px] text-[13px] font-semibold"
-            title="Disponible próximamente"
-          >
-            <SendIcon size={14} />
-            Generar reporte Telegram
-          </Button>
-        </div>
-      }
     >
+      {/*
+        Reporte de Telegram comentado: su uso está por decidir y no hay envío
+        real detrás. Para reactivarlo, devolver este bloque al prop `pie` del
+        Panel (y restaurar los imports de `Button` y `SendIcon`).
+
+        pie={
+          <div className="border-t border-border-subtle px-4 py-[14px]">
+            <Button
+              disabled
+              className="w-full py-[11px] text-[13px] font-semibold"
+              title="Disponible próximamente"
+            >
+              <SendIcon size={14} />
+              Generar reporte Telegram
+            </Button>
+          </div>
+        }
+      */}
+
       {estado === 'data' ? <OperatorsTable operadores={visibles} /> : null}
 
       {estado === 'empty' ? (

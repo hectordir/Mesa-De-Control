@@ -3,6 +3,7 @@ import type {
   SupervisionKpis,
   ZonaEstado,
 } from '../../../lib/api/types'
+import { hoyVE } from '../../../lib/tiempoVE'
 
 /**
  * Capa de presentación de Admin · Supervisión.
@@ -272,10 +273,7 @@ export function formatFechaCorta(iso: string): string {
   return `${d}/${m}/${y}`
 }
 
-/** Fecha de hoy del sistema en 'YYYY-MM-DD' (para anclar la vista al seed). */
+/** Día de operación de hoy en 'YYYY-MM-DD', en la hora de Venezuela. */
 export function todayIso(): string {
-  const now = new Date()
-  const mm = String(now.getMonth() + 1).padStart(2, '0')
-  const dd = String(now.getDate()).padStart(2, '0')
-  return `${now.getFullYear()}-${mm}-${dd}`
+  return hoyVE()
 }

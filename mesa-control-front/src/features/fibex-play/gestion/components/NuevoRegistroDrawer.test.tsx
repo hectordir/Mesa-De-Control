@@ -41,7 +41,7 @@ beforeEach(() => {
   crearMock.mockResolvedValue({
     id: 'a-1',
     operador: 'Jhon Rivas',
-    abonado: 'Cond. Los Robles',
+    abonado: '1002451',
     canal: 'ESPN',
     motivo: 'Sin señal',
     solucion: 'Reinicio de ONU',
@@ -61,6 +61,15 @@ describe('NuevoRegistroDrawer', () => {
     expect(await screen.findByRole('option', { name: 'ESPN' })).toBeInTheDocument()
   })
 
+  it('presenta el abonado como identificador Fibex, no como condominio', async () => {
+    renderDrawer()
+    await screen.findByRole('dialog')
+    const campo = screen.getByLabelText('Abonado')
+    expect(campo).toHaveAttribute('placeholder', 'N.º de abonado (ej. 100245)')
+    expect(screen.queryByText(/condominio/i)).not.toBeInTheDocument()
+    expect(screen.queryByLabelText(/Número de abonado/i)).not.toBeInTheDocument()
+  })
+
   it('deshabilita Guardar mientras faltan campos requeridos', async () => {
     renderDrawer()
     await screen.findByRole('dialog')
@@ -76,7 +85,7 @@ describe('NuevoRegistroDrawer', () => {
     await screen.findByRole('option', { name: 'Jhon Rivas' })
 
     await user.selectOptions(screen.getByLabelText(/Operador/i), 'u-1')
-    await user.type(screen.getByLabelText(/Número de abonado/i), 'Cond. Los Robles')
+    await user.type(screen.getByLabelText('Abonado'), '1002451')
     await user.selectOptions(screen.getByLabelText(/Canal/i), 'ESPN')
     await user.selectOptions(screen.getByLabelText(/Motivo/i), 'Sin señal')
     await user.selectOptions(
@@ -92,7 +101,7 @@ describe('NuevoRegistroDrawer', () => {
     await waitFor(() =>
       expect(crearMock).toHaveBeenCalledWith({
         operadorId: 'u-1',
-        abonado: 'Cond. Los Robles',
+        abonado: '1002451',
         canal: 'ESPN',
         motivo: 'Sin señal',
         solucion: 'Reinicio de ONU',

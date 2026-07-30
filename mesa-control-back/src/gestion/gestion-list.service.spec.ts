@@ -13,12 +13,15 @@ const fila = (over: Record<string, unknown> = {}) => ({
   fecha: new Date('2026-07-17T00:00:00.000Z'),
   createdAt: new Date('2026-07-17T14:42:00.000Z'),
   abonado: 'Cond. Los Robles',
+  nombreCliente: 'María Pérez',
   telefono: '0412-118-4420',
   detalle: 'Corte total de fibra',
   solucion: 'Ticket generado a NOC',
   canal: 'TELEGRAM',
   duracion: 12,
   operador: { id: 'op-1', name: 'Jhon Rivas' },
+  updatedAt: null,
+  editor: null,
   ...over,
 });
 
@@ -83,11 +86,12 @@ describe('GestionService.listar', () => {
     expect(res.pageSize).toBe(25);
   });
 
-  it('search filtra por abonado/telefono/operador (contains insensitive)', async () => {
+  it('search filtra por abonado/cliente/telefono/operador (contains insensitive)', async () => {
     await service.listar(query({ search: 'robles' }));
     const where = findManyArgs().where as { OR: unknown[] };
     expect(where.OR).toEqual([
       { abonado: { contains: 'robles', mode: 'insensitive' } },
+      { nombreCliente: { contains: 'robles', mode: 'insensitive' } },
       { telefono: { contains: 'robles', mode: 'insensitive' } },
       { operador: { name: { contains: 'robles', mode: 'insensitive' } } },
     ]);
@@ -113,6 +117,8 @@ describe('GestionService.listar', () => {
     ['fecha', 'asc', [{ fecha: 'asc' }, { createdAt: 'asc' }, { id: 'asc' }]],
     ['operador', 'asc', [{ operador: { name: 'asc' } }, { id: 'asc' }]],
     ['abonado', 'desc', [{ abonado: 'desc' }, { id: 'asc' }]],
+    ['nombreCliente', 'asc', [{ nombreCliente: 'asc' }, { id: 'asc' }]],
+    ['nombreCliente', 'desc', [{ nombreCliente: 'desc' }, { id: 'asc' }]],
     ['resultado', 'asc', [{ resultado: 'asc' }, { id: 'asc' }]],
     ['zona', 'desc', [{ ubicacion: 'desc' }, { id: 'asc' }]],
   ])('ordena por sortKey=%s dir=%s', async (sortKey, sortDir, expected) => {
@@ -149,16 +155,111 @@ describe('GestionService.listar', () => {
       codigo: codigoDeId('g-1'),
       operador: { id: 'op-1', nombre: 'Jhon Rivas', iniciales: 'JR' },
       abonado: 'Cond. Los Robles',
+      nombreCliente: 'María Pérez',
       telefono: '0412-118-4420',
       zona: 'Norte',
       canal: 'TELEGRAM',
       resultado: 'SOLUCIONADO_MESA',
       fecha: '2026-07-17',
-      hora: '14:42',
+      // createdAt 14:42 UTC = 10:42 en Caracas (UTC−4).
+      hora: '10:42',
       duracionMin: 12,
       detalle: 'Corte total de fibra',
       solucion: 'Ticket generado a NOC',
+      modificadaFecha: null,
+      modificadaHora: null,
+      editor: null,
     });
+  });
+
+  it('selecciona nombreCliente en el findMany', async () => {
+    await service.listar(query());
+    const select = findManyArgs().select as Record<string, boolean>;
+    expect(select.nombreCliente).toBe(true);
+  });
+
+  it('selecciona updatedAt y la relación editor en el findMany', async () => {
+    await service.listar(query());
+    const select = findManyArgs().select as Record<string, unknown>;
+    expect(select.updatedAt).toBe(true);
+    expect(select.editor).toEqual({ select: { id: true, name: true } });
+  });
+
+  it('sin updatedAt: modificadaFecha/Hora y editor son null', async () => {
+    const res = await service.listar(query());
+    expect(res.items[0].modificadaFecha).toBeNull();
+    expect(res.items[0].modificadaHora).toBeNull();
+    expect(res.items[0].editor).toBeNull();
+  });
+
+  it('con updatedAt: emite fecha DD/MM/YYYY, hora 12h y editor', async () => {
+    findMany.mockResolvedValue([
+      fila({
+        updatedAt: new Date('2026-07-18T11:47:00.000Z'),
+        editor: { id: 'u-9', name: 'Ana Suárez' },
+      }),
+    ]);
+    const res = await service.listar(query());
+    // 11:47 UTC = 7:47 en Caracas; el día no cambia.
+    expect(res.items[0].modificadaFecha).toBe('18/07/2026');
+    expect(res.items[0].modificadaHora).toBe('7:47 a. m.');
+    expect(res.items[0].editor).toEqual({ id: 'u-9', nombre: 'Ana Suárez' });
+  });
+
+  it('usa el mismo criterio de zona horaria que `hora` (Caracas)', async () => {
+    const instante = new Date('2026-07-17T14:42:00.000Z');
+    findMany.mockResolvedValue([
+      fila({ createdAt: instante, updatedAt: instante }),
+    ]);
+    const res = await service.listar(query());
+    // Mismo instante ⇒ misma hora VE: 10:42 (24h) === 10:42 a. m. (12h).
+    expect(res.items[0].hora).toBe('10:42');
+    expect(res.items[0].modificadaHora).toBe('10:42 a. m.');
+  });
+
+  it('franja 00:00–04:00 UTC: modificadaFecha es el día anterior en Caracas', async () => {
+    const madrugada = new Date('2026-01-05T02:30:00.000Z');
+    findMany.mockResolvedValue([
+      fila({ createdAt: madrugada, updatedAt: madrugada }),
+    ]);
+    const res = await service.listar(query());
+    expect(res.items[0].hora).toBe('22:30');
+    expect(res.items[0].modificadaFecha).toBe('04/01/2026');
+    expect(res.items[0].modificadaHora).toBe('10:30 p. m.');
+  });
+
+  it.each([
+    ['2026-01-05T04:00:00.000Z', '12:00 a. m.'],
+    ['2026-01-05T04:07:00.000Z', '12:07 a. m.'],
+    ['2026-01-05T13:05:00.000Z', '9:05 a. m.'],
+    ['2026-01-05T16:00:00.000Z', '12:00 p. m.'],
+    ['2026-01-06T03:59:00.000Z', '11:59 p. m.'],
+  ])('formatea %s como %s en 12 horas', async (iso, esperado) => {
+    findMany.mockResolvedValue([fila({ updatedAt: new Date(iso) })]);
+    const res = await service.listar(query());
+    expect(res.items[0].modificadaHora).toBe(esperado);
+  });
+
+  it('editor borrado (FK SET NULL): emite la fecha con editor null', async () => {
+    findMany.mockResolvedValue([
+      fila({ updatedAt: new Date('2026-07-18T11:47:00.000Z'), editor: null }),
+    ]);
+    const res = await service.listar(query());
+    expect(res.items[0].modificadaFecha).toBe('18/07/2026');
+    expect(res.items[0].modificadaHora).toBe('7:47 a. m.');
+    expect(res.items[0].editor).toBeNull();
+  });
+
+  // NO-REGRESIÓN: `fecha` es `@db.Date`; Prisma la devuelve como medianoche UTC.
+  // Convertirla a Caracas la retrasaría UN DÍA ENTERO.
+  it.each([
+    ['2026-07-17T00:00:00.000Z', '2026-07-17'],
+    ['2026-01-01T00:00:00.000Z', '2026-01-01'],
+    ['2015-06-15T00:00:00.000Z', '2015-06-15'],
+  ])('la columna `fecha` %s NO se desplaza: %s', async (iso, esperado) => {
+    findMany.mockResolvedValue([fila({ fecha: new Date(iso) })]);
+    const res = await service.listar(query());
+    expect(res.items[0].fecha).toBe(esperado);
   });
 
   it('degrada campos nullable: canal/duracion null e iniciales de un solo nombre', async () => {
@@ -179,7 +280,7 @@ describe('GestionService.listar', () => {
 describe('codigoDeId', () => {
   it('es estable y determinista para un mismo id', () => {
     expect(codigoDeId('abc-123')).toBe(codigoDeId('abc-123'));
-    expect(codigoDeId('abc-123')).toMatch(/^GST-\d{5}$/);
+    expect(codigoDeId('abc-123')).toMatch(/^LG-\d{5}$/);
   });
 
   it('distingue ids distintos (sin colisión trivial)', () => {

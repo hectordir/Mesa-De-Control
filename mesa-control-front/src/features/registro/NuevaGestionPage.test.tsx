@@ -38,7 +38,8 @@ function renderPage() {
 }
 
 async function llenarObligatorios(user: ReturnType<typeof userEvent.setup>) {
-  await user.type(screen.getByLabelText('Abonado / Cliente'), 'Cond. Los Robles')
+  await user.type(screen.getByLabelText('Abonado'), '  12345678  ')
+  await user.type(screen.getByLabelText('Nombre del Cliente'), '  María Pérez  ')
   await user.type(screen.getByLabelText('Teléfono de Contacto'), '0412 555 1234')
   await user.selectOptions(screen.getByLabelText('Detalle de la Orden'), 'Sin Internet')
   await user.selectOptions(screen.getByLabelText('Solución Aplicada'), 'Reinicio de ONU')
@@ -87,6 +88,18 @@ describe('NuevaGestionPage', () => {
     await waitFor(() => expect(operador.value).toBe('u-1'))
   })
 
+  it('sugiere el nombre del cliente como persona, no como condominio', () => {
+    renderPage()
+
+    expect(screen.getByLabelText('Nombre del Cliente')).toHaveAttribute(
+      'placeholder',
+      'María Pérez',
+    )
+    expect(
+      screen.queryByPlaceholderText(/cond\.|condominio|res\.|urb\.|torre|edif\./i),
+    ).not.toBeInTheDocument()
+  })
+
   it('guardar con obligatorios vacíos muestra errores y no llama a la API', async () => {
     const user = userEvent.setup()
     renderPage()
@@ -94,7 +107,73 @@ describe('NuevaGestionPage', () => {
     await user.click(screen.getByRole('button', { name: /Guardar/ }))
 
     const errores = await screen.findAllByText('Este campo es obligatorio')
-    expect(errores.length).toBeGreaterThanOrEqual(7)
+    expect(errores).toHaveLength(7)
+    expect(createMock).not.toHaveBeenCalled()
+  })
+
+  it('la observación vacía no impide registrar la gestión', async () => {
+    const user = userEvent.setup()
+    renderPage()
+    await waitFor(() =>
+      expect((screen.getByLabelText('Operador') as HTMLSelectElement).value).toBe(
+        'u-1',
+      ),
+    )
+
+    await user.type(screen.getByLabelText('Abonado'), '1002451')
+    await user.type(screen.getByLabelText('Nombre del Cliente'), 'María Pérez')
+    await user.type(screen.getByLabelText('Teléfono de Contacto'), '0412-118-4420')
+    await user.selectOptions(screen.getByLabelText('Detalle de la Orden'), 'Sin Internet')
+    await user.selectOptions(
+      screen.getByLabelText('Solución Aplicada'),
+      'Reinicio de ONU',
+    )
+    await user.selectOptions(screen.getByLabelText('Zona del Reporte'), 'Macuto')
+    await user.selectOptions(
+      screen.getByLabelText('Motivo de la Incidencia'),
+      'Corte de fibra',
+    )
+    await user.click(screen.getByRole('button', { name: /Guardar/ }))
+
+    await waitFor(() => expect(createMock).toHaveBeenCalledTimes(1))
+    expect(createMock.mock.calls[0][0]).toMatchObject({ observacion: '' })
+  })
+
+  it('renombra el campo a "Abonado" y añade "Nombre del Cliente" justo después', () => {
+    renderPage()
+
+    expect(screen.getByLabelText('Abonado')).toBeInTheDocument()
+    expect(screen.getByLabelText('Nombre del Cliente')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Abonado / Cliente')).not.toBeInTheDocument()
+    expect(screen.queryByText('Abonado / Cliente')).not.toBeInTheDocument()
+  })
+
+  it('no renderiza el panel derecho de Estado del Sistema ni el Consejo', () => {
+    renderPage()
+
+    expect(screen.queryByText('Estado del Sistema')).not.toBeInTheDocument()
+    expect(screen.queryByText('Consejo')).not.toBeInTheDocument()
+  })
+
+  it('guardar sin "Nombre del Cliente" marca el error y no llama a la API', async () => {
+    const user = userEvent.setup()
+    renderPage()
+
+    await user.type(screen.getByLabelText('Abonado'), '12345678')
+    await user.type(screen.getByLabelText('Teléfono de Contacto'), '0412 555 1234')
+    await user.selectOptions(screen.getByLabelText('Detalle de la Orden'), 'Sin Internet')
+    await user.selectOptions(screen.getByLabelText('Solución Aplicada'), 'Reinicio de ONU')
+    await user.selectOptions(screen.getByLabelText('Zona del Reporte'), 'Macuto')
+    await user.selectOptions(
+      screen.getByLabelText('Motivo de la Incidencia'),
+      'Corte de fibra',
+    )
+    await user.type(screen.getByLabelText('Observación del SAE'), 'Cliente conforme')
+
+    await user.click(screen.getByRole('button', { name: /Guardar/ }))
+
+    const errores = await screen.findAllByText('Este campo es obligatorio')
+    expect(errores).toHaveLength(1)
     expect(createMock).not.toHaveBeenCalled()
   })
 
@@ -121,7 +200,8 @@ describe('NuevaGestionPage', () => {
     expect(createMock).toHaveBeenCalledWith({
       operadorId: 'u-3',
       fecha: hoyISO(),
-      abonado: 'Cond. Los Robles',
+      abonado: '12345678',
+      nombreCliente: 'María Pérez',
       telefono: '0412 555 1234',
       detalle: 'Sin Internet',
       solucion: 'Reinicio de ONU',
@@ -137,10 +217,11 @@ describe('NuevaGestionPage', () => {
     expect(await screen.findByRole('status')).toHaveTextContent('Gestión guardada')
     // el formulario se resetea; el operador seleccionado se conserva
     await waitFor(() =>
-      expect(
-        (screen.getByLabelText('Abonado / Cliente') as HTMLInputElement).value,
-      ).toBe(''),
+      expect((screen.getByLabelText('Abonado') as HTMLInputElement).value).toBe(''),
     )
+    expect(
+      (screen.getByLabelText('Nombre del Cliente') as HTMLInputElement).value,
+    ).toBe('')
     expect((screen.getByLabelText('Operador') as HTMLSelectElement).value).toBe('u-3')
   })
 
@@ -148,11 +229,13 @@ describe('NuevaGestionPage', () => {
     const user = userEvent.setup()
     renderPage()
 
-    await user.type(screen.getByLabelText('Abonado / Cliente'), 'Algo')
+    await user.type(screen.getByLabelText('Abonado'), 'Algo')
+    await user.type(screen.getByLabelText('Nombre del Cliente'), 'Alguien')
     await user.click(screen.getByRole('button', { name: 'Limpiar' }))
 
+    expect((screen.getByLabelText('Abonado') as HTMLInputElement).value).toBe('')
     expect(
-      (screen.getByLabelText('Abonado / Cliente') as HTMLInputElement).value,
+      (screen.getByLabelText('Nombre del Cliente') as HTMLInputElement).value,
     ).toBe('')
     expect(createMock).not.toHaveBeenCalled()
   })

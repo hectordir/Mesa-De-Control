@@ -164,8 +164,10 @@ export interface CreateGestionRequest {
   operadorId: string
   /** 'YYYY-MM-DD' (por defecto hoy). */
   fecha: string
-  /** * requerido — nombre/condominio del cliente. */
+  /** * requerido — identificador / nº de abonado. */
   abonado: string
+  /** * requerido — nombre del cliente asociado al abonado. */
+  nombreCliente: string
   /** * requerido — ej. '0412 555 1234'. */
   telefono: string
   /** * requerido — Detalle de Orden. */
@@ -189,10 +191,13 @@ export interface CreateGestionRequest {
 
 export interface GestionResponse {
   id: string
+  /** id legible `LG-#####`, derivado por el back. */
+  codigo: string
   /** 'YYYY-MM-DD' */
   fecha: string
   operador: { id: string; nombre: string }
   abonado: string
+  nombreCliente: string
   telefono: string
   detalle: string
   solucion: string
@@ -205,7 +210,17 @@ export interface GestionResponse {
   coordenadas: string | null
   /** ISO instante */
   createdAt: string
+  /** ISO instante de la última edición explícita; `null` si nunca se editó. */
+  updatedAt?: string | null
+  /** Id del usuario que editó por última vez; `null` si nunca se editó. */
+  updatedBy?: string | null
 }
+
+/**
+ * Body de `PATCH /gestiones/:id` — parcial de `CreateGestionRequest`.
+ * `id`, `createdAt`, `codigo` y `hora` son inmutables y no viajan nunca.
+ */
+export type UpdateGestionRequest = Partial<CreateGestionRequest>
 
 /* ── Historial General (ver spec `historial-general`) ─────────────────────────
    Endpoint: GET /gestiones (JWT). Listado paginado + filtrado + ordenado, con
@@ -218,6 +233,7 @@ export type HistorialSortKey =
   | 'fecha'
   | 'operador'
   | 'abonado'
+  | 'nombreCliente'
   | 'resultado'
   | 'zona'
 
@@ -226,10 +242,14 @@ export type SortDir = 'asc' | 'desc'
 /** Fila de la sábana de gestiones; todo el detalle del drawer viaja aquí. */
 export interface GestionRow {
   id: string
-  /** id legible `GST-#####`, estable y determinista (lo deriva el back). */
+  /** id legible `LG-#####`, estable y determinista (lo deriva el back). */
   codigo: string
   operador: { id: string; nombre: string; iniciales: string }
+  /** Identificador del cliente en Fibex (texto libre); se ve en el drawer y el CSV. */
   abonado: string
+  /** Nombre del cliente; puede venir vacío en filas históricas. */
+  nombreCliente: string
+  /** Puede venir vacío en filas históricas. */
   telefono: string
   /** = ubicacion. */
   zona: string
@@ -242,6 +262,12 @@ export interface GestionRow {
   duracionMin: number | null
   detalle: string
   solucion: string
+  /** DD/MM/YYYY de `updatedAt`; null si nunca se editó. */
+  modificadaFecha: string | null
+  /** Hora de `updatedAt` ya formateada en 12h (`11:47 a. m.`); null si nunca se editó. */
+  modificadaHora: string | null
+  /** Quién hizo la última edición; null si nunca se editó o si el usuario fue borrado. */
+  editor: { id: string; nombre: string } | null
 }
 
 export interface HistorialParams {

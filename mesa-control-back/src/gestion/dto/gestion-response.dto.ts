@@ -22,6 +22,12 @@ export class GestionResponseDto {
   @ApiProperty({ format: 'uuid' })
   id!: string;
 
+  @ApiProperty({
+    example: 'LG-40921',
+    description: 'Código legible derivado del id (estable y determinista)',
+  })
+  codigo!: string;
+
   @ApiProperty({ example: '2026-07-22', description: 'Día de operación' })
   fecha!: string;
 
@@ -30,6 +36,9 @@ export class GestionResponseDto {
 
   @ApiProperty({ example: 'Cond. Los Robles' })
   abonado!: string;
+
+  @ApiProperty({ example: 'María Pérez', description: 'Nombre del cliente' })
+  nombreCliente!: string;
 
   @ApiProperty({ example: '0412 555 1234' })
   telefono!: string;
@@ -67,4 +76,21 @@ export class GestionResponseDto {
     description: 'Instante de registro (createdAt) en ISO 8601',
   })
   createdAt!: string;
+
+  @ApiProperty({
+    format: 'date-time',
+    example: '2026-07-28T12:00:00.000Z',
+    nullable: true,
+    description:
+      'Instante de la última edición explícita; `null` si nunca se editó.',
+  })
+  updatedAt!: string | null;
+
+  @ApiProperty({
+    format: 'uuid',
+    nullable: true,
+    description:
+      'Id del usuario (ADMIN/SUPERVISOR) que editó por última vez; `null` si nunca se editó.',
+  })
+  updatedBy!: string | null;
 }

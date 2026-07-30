@@ -151,10 +151,26 @@ describe('FibexPlayService', () => {
       categoria: 'DEPORTES',
       tipoIncidencia: 'SIN_SENAL',
       severidad: 'CRITICA',
-      hora: '09:42',
+      // 09:42 UTC = 05:42 en Caracas; `detectadoEn` se queda en ISO UTC.
+      hora: '05:42',
       detectadoEn: '2026-07-22T09:42:00.000Z',
     });
-    expect(res.fallas[1].hora).toBe('10:51');
+    expect(res.fallas[1].hora).toBe('06:51');
+  });
+
+  it('franja 00:00–04:00 UTC: la hora es la del día anterior en Caracas', async () => {
+    await setup({
+      fallas: [
+        caido('madrugada', 'MEDIA', '2026-07-22T02:30:00.000Z', {
+          nombre: 'ESPN',
+          categoria: 'DEPORTES',
+          tipoIncidencia: 'SIN_SENAL',
+        }),
+      ],
+    });
+    const res = await service.grilla();
+    expect(res.fallas[0].hora).toBe('22:30');
+    expect(res.fallas[0].detectadoEn).toBe('2026-07-22T02:30:00.000Z');
   });
 
   it('total=0 ⇒ saludGrilla 100 y arrays vacíos', async () => {

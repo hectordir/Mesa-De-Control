@@ -12,7 +12,8 @@ const createMock = vi.mocked(createGestion)
 const payload: CreateGestionRequest = {
   operadorId: 'u-1',
   fecha: '2026-07-22',
-  abonado: 'Cond. Los Robles',
+  abonado: '100245',
+  nombreCliente: 'María Pérez',
   telefono: '0412 555 1234',
   detalle: 'Sin Internet',
   solucion: 'Reinicio de ONU',

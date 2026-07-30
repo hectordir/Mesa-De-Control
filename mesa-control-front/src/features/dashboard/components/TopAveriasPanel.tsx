@@ -25,7 +25,10 @@ export function TopAveriasPanel({ averias, estado }: TopAveriasPanelProps) {
       estado={estado}
     >
       {estado === 'data' ? (
-        <div className="flex flex-col gap-[14px] p-4">
+        // 260px de mínimo (los que ocupan las 5 barras) + 75px de cabecera =
+        // los 335px que mide la fila con datos abundantes: con listas cortas el
+        // panel ya no encoge y la fila 2 conserva su altura.
+        <div className="flex min-h-[260px] flex-col gap-[14px] p-4">
           {averias.map((averia) => (
             <AveriaBar key={averia.motivo} averia={averia} maximo={maximo} />
           ))}

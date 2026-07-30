@@ -20,14 +20,17 @@ La **sesión principal orquesta**: planifica, escribe/valida specs, delega e int
 features.** No existe un agente "orquestador" (un subagente no puede delegar en otros subagentes).
 
 ### Subagentes disponibles (`.claude/agents/`)
+
 - **`frontend-dev`** — investiga e implementa el front bajo TDD. Devuelve resumen.
 - **`backend-dev`** — investiga e implementa el back bajo TDD. Devuelve resumen.
 - Para descubrimiento read-only transversal y barato, puedes usar el agente **`Explore`** integrado.
 
 ### Skills disponibles (`.claude/skills/`)
+
 - **`prisma-postgres-setup`** — provisionar una base Prisma Postgres y conectarla al proyecto.
 
 ### Principios rectores (no negociables)
+
 1. **Un trabajo por agente.** Delega al especialista del dominio correcto; nada de tareas hace-todo.
 2. **Higiene de contexto.** El orquestador **no lee árboles ni archivos completos** si puede delegar
    el descubrimiento. Los especialistas devuelven **resúmenes accionables (≤40 líneas)** con
@@ -36,11 +39,15 @@ features.** No existe un agente "orquestador" (un subagente no puede delegar en 
 4. **SDD antes que código.** Ninguna implementación arranca sin un **spec aprobado** (`.claude/specs/`).
 5. **TDD dentro de cada implementación.** Test que falla → código mínimo → refactor. El test primero.
 6. **Puertas humanas 🚦.** Detente y pide aprobación en: (a) el spec, antes de implementar;
-   (b) instalar dependencias nuevas o skills; (c) cualquier acción que descargue contenido externo.
+   (b) instalar dependencias nuevas o skills; (c) cualquier acción que descargue contenido
+   externo; (d) **usar un servidor MCP** (Playwright, Chrome, etc.) para automatizar el
+   navegador o cualquier herramienta externa: propón el uso y espera confirmación antes de
+   lanzarlo por tu cuenta.
 7. **Docs de librerías → context7.** Usa el CLI `npx ctx7@latest` para API/config actuales de
    librerías; no dependas de la memoria del modelo.
 
 ### El orquestador escribe SOLO
+
 Specs (`.claude/specs/…`) y documentación de proyecto (`CLAUDE.md`). **El código de feature lo
 escriben los especialistas.** Respeta el stack indicado; no introduzcas librerías nuevas sin
 justificarlo y pedir aprobación.
@@ -59,6 +66,7 @@ justificarlo y pedir aprobación.
 Detalle completo del ciclo: [`.claude/WORKFLOW.md`](.claude/WORKFLOW.md).
 
 Comandos de referencia:
+
 - Front: `cd mesa-control-front && npm run dev | npm run build | npm run lint`
   (Vitest/Playwright se añaden al homologar el stack).
 - Back: `cd mesa-control-back && npm run start:dev | npm test | npm run test:e2e | npm run lint`.

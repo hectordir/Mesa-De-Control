@@ -8,6 +8,7 @@ import {
   RESULTADO_OPCIONES,
   SOLUCION_OPCIONES,
   TIPO_OPCIONES,
+  conValorActual,
 } from '../opciones'
 import { DateField, SegToggle, SelectField, TextField } from './campos'
 
@@ -51,11 +52,18 @@ export function GrupoDatos({
           onChange={(v) => setField('operadorId', v)}
         />
         <TextField
-          label="Abonado / Cliente"
+          label="Abonado"
           value={values.abonado}
           error={errors.abonado}
-          placeholder="Cond. Los Robles"
+          placeholder="N.º de abonado (ej. 100245)"
           onChange={(v) => setField('abonado', v)}
+        />
+        <TextField
+          label="Nombre del Cliente"
+          value={values.nombreCliente}
+          error={errors.nombreCliente}
+          placeholder="María Pérez"
+          onChange={(v) => setField('nombreCliente', v)}
         />
         <TextField
           label="Teléfono de Contacto"
@@ -69,7 +77,7 @@ export function GrupoDatos({
           value={values.detalle}
           error={errors.detalle}
           placeholder="Selecciona un detalle"
-          options={DETALLE_OPCIONES}
+          options={conValorActual(DETALLE_OPCIONES, values.detalle)}
           onChange={(v) => setField('detalle', v)}
         />
         <SelectField
@@ -77,19 +85,20 @@ export function GrupoDatos({
           value={values.solucion}
           error={errors.solucion}
           placeholder="Selecciona una solución"
-          options={SOLUCION_OPCIONES}
+          options={conValorActual(SOLUCION_OPCIONES, values.solucion)}
           onChange={(v) => setField('solucion', v)}
         />
         <SelectField
           label="Resultado de la Gestión"
           value={values.resultado}
-          options={RESULTADO_OPCIONES}
+          options={conValorActual(RESULTADO_OPCIONES, values.resultado)}
           onChange={(v) => setField('resultado', v as GestionFormValues['resultado'])}
         />
         <SelectField
           label="Tipo de Resolución"
           value={values.tipo}
-          options={TIPO_OPCIONES}
+          placeholder="Selecciona un tipo"
+          options={conValorActual(TIPO_OPCIONES, values.tipo)}
           onChange={(v) => setField('tipo', v)}
         />
       </div>

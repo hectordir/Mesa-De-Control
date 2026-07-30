@@ -1,12 +1,16 @@
 import { useState } from 'react'
 import type { CreateGestionRequest, ResultadoGestion } from '../../../lib/api/types'
+import { hoyVE } from '../../../lib/tiempoVE'
 
 /** Estado local del formulario. Desde la Rev. 2 el operador es seleccionable. */
 export interface GestionFormValues {
   /** Id del operador al que se atribuye la gestión (select). */
   operadorId: string
   fecha: string
+  /** Identificador / nº de abonado. */
   abonado: string
+  /** Nombre del cliente asociado al abonado. */
+  nombreCliente: string
   telefono: string
   detalle: string
   solucion: string
@@ -21,25 +25,26 @@ export interface GestionFormValues {
 
 export type GestionFormErrors = Partial<Record<keyof GestionFormValues, string>>
 
-/** Campos obligatorios validados en cliente (mismo set que el spec). */
+/**
+ * Campos obligatorios validados en cliente (mismo set que el spec).
+ * `observacion` quedó fuera: el back la acepta vacía y hay filas sembradas sin
+ * ella, que de otro modo no se podrían guardar desde el modal de edición.
+ */
 export const CAMPOS_OBLIGATORIOS = [
   'abonado',
+  'nombreCliente',
   'telefono',
   'detalle',
   'solucion',
   'zona',
   'motivo',
-  'observacion',
 ] as const
 
 export const MENSAJE_OBLIGATORIO = 'Este campo es obligatorio'
 
-/** Fecha de hoy en formato 'YYYY-MM-DD' (hora local del operador). */
+/** Fecha de hoy en 'YYYY-MM-DD', en la hora de la operación (Venezuela). */
 export function hoy(): string {
-  const d = new Date()
-  const mm = String(d.getMonth() + 1).padStart(2, '0')
-  const dd = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${mm}-${dd}`
+  return hoyVE()
 }
 
 function valoresIniciales(): GestionFormValues {
@@ -47,6 +52,7 @@ function valoresIniciales(): GestionFormValues {
     operadorId: '',
     fecha: hoy(),
     abonado: '',
+    nombreCliente: '',
     telefono: '',
     detalle: '',
     solucion: '',
@@ -66,6 +72,7 @@ export function toPayload(values: GestionFormValues): CreateGestionRequest {
     operadorId: values.operadorId,
     fecha: values.fecha,
     abonado: values.abonado.trim(),
+    nombreCliente: values.nombreCliente.trim(),
     telefono: values.telefono.trim(),
     detalle: values.detalle,
     solucion: values.solucion,
@@ -80,11 +87,23 @@ export function toPayload(values: GestionFormValues): CreateGestionRequest {
 }
 
 /**
- * Estado y validación del formulario de Nueva Gestión.
- * `reset` conserva la fecha y el operador seleccionado.
+ * Estado y validación del formulario de gestión (registro y edición).
+ *
+ * - **Creación** (`iniciales` ausente): arranca en los valores por defecto y
+ *   `reset` limpia conservando la fecha y el operador seleccionado.
+ * - **Edición** (`iniciales` presente): arranca en los valores inyectados y
+ *   `reset` vuelve exactamente a ellos (deshacer los cambios del formulario).
+ *
+ * Los iniciales se congelan en el primer render: el modal de edición monta el
+ * formulario solo cuando el detalle ya llegó, así que no hay resincronización.
  */
-export function useGestionForm() {
-  const [values, setValues] = useState<GestionFormValues>(valoresIniciales)
+export function useGestionForm(iniciales?: Partial<GestionFormValues>) {
+  const [base] = useState<GestionFormValues | null>(() =>
+    iniciales ? { ...valoresIniciales(), ...iniciales } : null,
+  )
+  const [values, setValues] = useState<GestionFormValues>(
+    () => base ?? valoresIniciales(),
+  )
   const [errors, setErrors] = useState<GestionFormErrors>({})
 
   function setField<K extends keyof GestionFormValues>(
@@ -106,11 +125,11 @@ export function useGestionForm() {
   }
 
   function reset() {
-    setValues((prev) => ({
-      ...valoresIniciales(),
-      fecha: prev.fecha,
-      operadorId: prev.operadorId,
-    }))
+    setValues((prev) =>
+      base
+        ? base
+        : { ...valoresIniciales(), fecha: prev.fecha, operadorId: prev.operadorId },
+    )
     setErrors({})
   }
 

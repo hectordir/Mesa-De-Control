@@ -1,5 +1,9 @@
 import type { GestionRow } from '../../../lib/api/types'
-import { formatFecha } from '../lib/historial.presentation'
+import {
+  formatAbonado,
+  formatFecha,
+  textoODash,
+} from '../lib/historial.presentation'
 import { ResultadoChip } from './ResultadoChip'
 
 interface HistorialCardsProps {
@@ -20,12 +24,12 @@ export function HistorialCards({ rows, onOpenRow }: HistorialCardsProps) {
           >
             <div className="flex items-center justify-between gap-2">
               <span className="text-caption font-medium text-text-secondary">
-                {row.codigo}
+                {formatAbonado(row.abonado)}
               </span>
               <ResultadoChip resultado={row.resultado} />
             </div>
             <span className="text-body font-semibold text-text-primary">
-              {row.abonado}
+              {textoODash(row.nombreCliente)}
             </span>
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-caption text-text-secondary">
               <span className="flex items-center gap-2">

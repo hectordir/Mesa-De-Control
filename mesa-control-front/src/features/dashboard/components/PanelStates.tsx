@@ -25,6 +25,8 @@ export function Panel({
   pie,
   children,
 }: PanelProps) {
+  // Sin `h-full`: el panel mide lo que mide su contenido. Que dos paneles de
+  // una misma fila queden desparejos es preferible a dejarles hueco muerto.
   return (
     <section
       role="region"

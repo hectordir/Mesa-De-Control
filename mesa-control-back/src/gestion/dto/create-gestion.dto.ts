@@ -6,6 +6,7 @@ import {
   IsOptional,
   IsString,
   Matches,
+  MaxLength,
 } from 'class-validator';
 
 import { ResultadoGestion } from '../../generated/prisma/enums';
@@ -51,7 +52,20 @@ export class CreateGestionDto {
   @IsNotEmpty({ message: 'abonado es obligatorio' })
   abonado!: string;
 
-  @ApiProperty({ example: '0412 555 1234' })
+  @ApiProperty({
+    example: 'María Pérez',
+    maxLength: 120,
+    description: 'Nombre del cliente (obligatorio, no admite vacío)',
+  })
+  @IsString()
+  @IsNotEmpty({ message: 'nombreCliente es obligatorio' })
+  @MaxLength(120, { message: 'nombreCliente no puede superar 120 caracteres' })
+  nombreCliente!: string;
+
+  @ApiProperty({
+    example: '0412-555-1234',
+    description: 'Teléfono de contacto (obligatorio, no admite vacío)',
+  })
   @IsString()
   @IsNotEmpty({ message: 'telefono es obligatorio' })
   telefono!: string;
@@ -95,10 +109,13 @@ export class CreateGestionDto {
   @IsNotEmpty({ message: 'motivo es obligatorio' })
   motivo!: string;
 
-  @ApiProperty({ example: 'Cliente notificado; se agenda seguimiento.' })
+  @ApiPropertyOptional({
+    example: 'Cliente notificado; se agenda seguimiento.',
+    description: 'Nota de cierre; opcional (se persiste como "" si falta).',
+  })
+  @IsOptional()
   @IsString()
-  @IsNotEmpty({ message: 'observacion es obligatorio' })
-  observacion!: string;
+  observacion?: string;
 
   @ApiPropertyOptional({
     example: '10.6012, -66.9311',

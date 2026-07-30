@@ -2,6 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 
 import { DashboardService } from './dashboard.service';
 import { PrismaService } from '../prisma/prisma.service';
+import { hoyVE } from '../common/time/index';
+import { sinHoraLocal } from '../common/time/sin-hora-local';
 
 type GroupByArgs = { by: string[]; take?: number };
 type CountRow = Record<string, unknown> & { _count: { _all: number } };
@@ -64,9 +66,21 @@ describe('DashboardService', () => {
       const resumen = await service.monitorDiario();
 
       expect(resumen.fecha).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      const hoy = new Date();
-      const esperado = `${hoy.getFullYear()}-${String(hoy.getMonth() + 1).padStart(2, '0')}-${String(hoy.getDate()).padStart(2, '0')}`;
-      expect(resumen.fecha).toBe(esperado);
+      expect(resumen.fecha).toBe(hoyVE());
+    });
+
+    // El "hoy" debe salir de America/Caracas, no de la zona del proceso:
+    // en producción el contenedor puede correr en UTC.
+    it('el día por defecto es el de Caracas, sin usar la hora local del proceso', async () => {
+      await setup({});
+      jest.useFakeTimers().setSystemTime(new Date('2026-07-18T02:30:00.000Z'));
+      try {
+        // 02:30 UTC del 18 son las 22:30 del 17 en Caracas.
+        const resumen = await sinHoraLocal(() => service.monitorDiario());
+        expect(resumen.fecha).toBe('2026-07-17');
+      } finally {
+        jest.useRealTimers();
+      }
     });
 
     it('devuelve la fecha solicitada y filtra por ella en todas las consultas', async () => {

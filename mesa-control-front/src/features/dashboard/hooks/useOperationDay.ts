@@ -1,30 +1,10 @@
-import { useCallback, useMemo, useState } from 'react'
-
-const DIAS = [
-  'domingo',
-  'lunes',
-  'martes',
-  'miércoles',
-  'jueves',
-  'viernes',
-  'sábado',
-] as const
+import { useCallback, useMemo } from 'react'
+import { DIAS, MESES } from '../../../lib/fechas'
+import { hoyVE } from '../../../lib/tiempoVE'
+import { useDashboardDateStore } from '../../../stores/dashboardDate.store'
 
 /** Meses en es-VE, en minúscula; los reutiliza el filtro mensual. */
-export const MESES = [
-  'enero',
-  'febrero',
-  'marzo',
-  'abril',
-  'mayo',
-  'junio',
-  'julio',
-  'agosto',
-  'septiembre',
-  'octubre',
-  'noviembre',
-  'diciembre',
-] as const
+export { MESES }
 
 /**
  * Formateo propio en es-VE: `Intl` depende del ICU del entorno y aquí sólo
@@ -47,12 +27,12 @@ export function formatoCorto(iso: string): string {
   return `${dia} ${MESES[mes - 1].slice(0, 3)} ${anio}`
 }
 
-/** Fecha local de hoy en `YYYY-MM-DD` (sin desfase por UTC). */
+/**
+ * Día de operación de hoy en `YYYY-MM-DD`, siempre en la hora de Venezuela:
+ * la mesa (y el backend) trabajan sobre ese día, no sobre el del navegador.
+ */
 export function hoyISO(): string {
-  const ahora = new Date()
-  const mes = `${ahora.getMonth() + 1}`.padStart(2, '0')
-  const dia = `${ahora.getDate()}`.padStart(2, '0')
-  return `${ahora.getFullYear()}-${mes}-${dia}`
+  return hoyVE()
 }
 
 export interface OperationDay {
@@ -64,10 +44,16 @@ export interface OperationDay {
   volverAHoy: () => void
 }
 
-/** Fecha de operación de la vista: hoy por defecto, con "volver a hoy". */
+/**
+ * Fecha de operación de la vista: hoy por defecto, con "volver a hoy".
+ *
+ * El estado vive en `useDashboardDateStore` para que el Análisis Mensual vea el
+ * mismo día (su periodo se deriva de esta fecha).
+ */
 export function useOperationDay(): OperationDay {
-  const [fecha, setFecha] = useState(hoyISO)
-  const volverAHoy = useCallback(() => setFecha(hoyISO()), [])
+  const fecha = useDashboardDateStore((estado) => estado.fecha)
+  const setFecha = useDashboardDateStore((estado) => estado.setFecha)
+  const volverAHoy = useCallback(() => setFecha(hoyISO()), [setFecha])
 
   return useMemo(
     () => ({
@@ -78,6 +64,6 @@ export function useOperationDay(): OperationDay {
       setFecha,
       volverAHoy,
     }),
-    [fecha, volverAHoy],
+    [fecha, setFecha, volverAHoy],
   )
 }

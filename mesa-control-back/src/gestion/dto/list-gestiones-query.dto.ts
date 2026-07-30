@@ -23,7 +23,10 @@ const RESULTADO_ENUM = [
 export const SORT_KEYS = [
   'fecha',
   'operador',
+  // `abonado` (ubicación) se mantiene por compatibilidad aunque la tabla del
+  // Historial ordene ya por `nombreCliente`.
   'abonado',
+  'nombreCliente',
   'resultado',
   'zona',
 ] as const;
@@ -60,7 +63,7 @@ export class ListGestionesQueryDto {
 
   @ApiPropertyOptional({
     description:
-      'contains case-insensitive sobre abonado, teléfono y operador.',
+      'contains case-insensitive sobre abonado, nombre del cliente, teléfono y operador.',
   })
   @IsOptional()
   @IsString()

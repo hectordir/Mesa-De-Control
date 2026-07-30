@@ -50,7 +50,7 @@ export function HistorialToolbar({
         <Input
           type="search"
           aria-label="Buscar gestiones"
-          placeholder="Buscar por abonado, operador o teléfono"
+          placeholder="Buscar por abonado, cliente, operador o teléfono"
           inputSize="sm"
           leadingIcon={<SearchIcon />}
           value={search}

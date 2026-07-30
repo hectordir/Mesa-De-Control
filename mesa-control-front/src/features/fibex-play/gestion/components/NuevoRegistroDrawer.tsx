@@ -162,10 +162,10 @@ function DrawerContenido({
               placeholder="Selecciona un operador"
             />
             <TextField
-              label="Número de abonado"
+              label="Abonado"
               value={form.abonado}
               onChange={set('abonado')}
-              placeholder="Nombre, condominio o nº de cuenta"
+              placeholder="N.º de abonado (ej. 100245)"
             />
             <SelectField
               label="Canal"

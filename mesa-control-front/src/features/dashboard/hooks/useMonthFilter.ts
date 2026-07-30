@@ -1,5 +1,7 @@
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useMemo } from 'react'
 import { MESES } from './useOperationDay'
+import { mesActualVE } from '../../../lib/tiempoVE'
+import { useDashboardDateStore } from '../../../stores/dashboardDate.store'
 
 /** Cantidad de meses ofrecidos en el desplegable. */
 const MESES_DISPONIBLES = 12
@@ -14,10 +16,9 @@ export function etiquetaMes(periodo: string): string {
 const iso = (anio: number, mes: number) =>
   `${anio}-${`${mes}`.padStart(2, '0')}`
 
-/** Mes en curso en `YYYY-MM` (hora local, sin desfase por UTC). */
+/** Mes en curso en `YYYY-MM`, en la hora de la operación (Venezuela). */
 export function mesActualISO(): string {
-  const ahora = new Date()
-  return iso(ahora.getFullYear(), ahora.getMonth() + 1)
+  return mesActualVE()
 }
 
 export interface MonthOption {
@@ -30,30 +31,59 @@ export interface MonthFilterState {
   periodo: string
   etiqueta: string
   opciones: MonthOption[]
+  esMesActual: boolean
   setPeriodo: (periodo: string) => void
+  volverAlMesActual: () => void
 }
 
-/** Mes consultado por la vista: el actual por defecto, con los 12 últimos. */
+/**
+ * Mes consultado por la vista: el actual por defecto, con los 12 últimos.
+ *
+ * El periodo no es estado propio: se **deriva** de la fecha compartida en
+ * `useDashboardDateStore`, y elegir un mes fija su día 1. Así el Monitor Diario
+ * y esta vista no pueden discrepar.
+ */
 export function useMonthFilter(): MonthFilterState {
-  const [periodo, setPeriodo] = useState(mesActualISO)
-  const cambiar = useCallback((valor: string) => setPeriodo(valor), [])
+  const fecha = useDashboardDateStore((estado) => estado.fecha)
+  const setFecha = useDashboardDateStore((estado) => estado.setFecha)
+  const periodo = fecha.slice(0, 7)
+
+  const cambiar = useCallback(
+    (valor: string) => setFecha(`${valor}-01`),
+    [setFecha],
+  )
+  const volverAlMesActual = useCallback(
+    () => setFecha(`${mesActualISO()}-01`),
+    [setFecha],
+  )
 
   const opciones = useMemo(() => {
-    const ahora = new Date()
-    return Array.from({ length: MESES_DISPONIBLES }, (_, i) => {
-      const fecha = new Date(ahora.getFullYear(), ahora.getMonth() - i, 1)
+    // Se cuenta hacia atrás desde el mes venezolano en curso; el `Date` sólo
+    // hace de calculadora de calendario (día 1, sin hora), no de reloj.
+    const [anio, mes] = mesActualISO().split('-').map(Number)
+    const ultimos = Array.from({ length: MESES_DISPONIBLES }, (_, i) => {
+      const fecha = new Date(anio, mes - 1 - i, 1)
       const value = iso(fecha.getFullYear(), fecha.getMonth() + 1)
       return { value, label: etiquetaMes(value) }
     })
-  }, [])
+    // El calendario diario admite cualquier día pasado, también de un mes
+    // anterior a los doce ofrecidos. Sin esta opción el `<select>` quedaría con
+    // un `value` inexistente y el navegador mostraría otro mes.
+    if (ultimos.some((opcion) => opcion.value === periodo)) return ultimos
+    return [...ultimos, { value: periodo, label: etiquetaMes(periodo) }].sort(
+      (a, b) => b.value.localeCompare(a.value),
+    )
+  }, [periodo])
 
   return useMemo(
     () => ({
       periodo,
       etiqueta: etiquetaMes(periodo),
       opciones,
+      esMesActual: periodo === mesActualISO(),
       setPeriodo: cambiar,
+      volverAlMesActual,
     }),
-    [periodo, opciones, cambiar],
+    [periodo, opciones, cambiar, volverAlMesActual],
   )
 }

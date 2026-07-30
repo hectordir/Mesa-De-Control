@@ -17,6 +17,7 @@ import {
   AnalisisMensualMotivoDto,
   AnalisisMensualOperadorDto,
 } from './dto/analisis-mensual.dto';
+import { hoyVE, mesActualVE } from '../common/time/index';
 
 /** Orden fijo de la leyenda del donut: no depende de los datos del día. */
 const RESULTADOS: ResultadoGestion[] = [
@@ -74,12 +75,9 @@ type GestionReciente = {
 export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
-  /** Día de hoy en la zona del servidor, como `YYYY-MM-DD`. */
+  /** Día de hoy en hora de Caracas, como `YYYY-MM-DD`. */
   private static hoy(): string {
-    const now = new Date();
-    const mes = String(now.getMonth() + 1).padStart(2, '0');
-    const dia = String(now.getDate()).padStart(2, '0');
-    return `${now.getFullYear()}-${mes}-${dia}`;
+    return hoyVE();
   }
 
   async monitorDiario(fecha?: string): Promise<MonitorDiarioResumenDto> {
@@ -224,10 +222,9 @@ export class DashboardService {
 
   /* ── Análisis Mensual ─────────────────────────────────────────────────── */
 
-  /** Mes en curso en la zona del servidor, como `YYYY-MM`. */
+  /** Mes en curso en hora de Caracas, como `YYYY-MM`. */
   private static mesActual(): string {
-    const now = new Date();
-    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    return mesActualVE();
   }
 
   /** Medianoche UTC del día 1 de `periodo` desplazado `delta` meses. */

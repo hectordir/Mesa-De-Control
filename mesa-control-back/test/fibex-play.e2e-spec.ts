@@ -201,7 +201,7 @@ describe('Fibex Play · grilla en vivo (e2e)', () => {
         categoria: 'DEPORTES',
         tipoIncidencia: 'SIN_SENAL',
         severidad: 'CRITICA',
-        hora: '09:42',
+        hora: '05:42',
         detectadoEn: '2026-07-22T09:42:00.000Z',
       },
       {
@@ -210,7 +210,7 @@ describe('Fibex Play · grilla en vivo (e2e)', () => {
         categoria: 'INFANTIL',
         tipoIncidencia: 'SIN_SENAL',
         severidad: 'CRITICA',
-        hora: '10:07',
+        hora: '06:07',
         detectadoEn: '2026-07-22T10:07:00.000Z',
       },
       {
@@ -219,7 +219,7 @@ describe('Fibex Play · grilla en vivo (e2e)', () => {
         categoria: 'DOCUMENTALES',
         tipoIncidencia: 'VIDEO_PIXELADO',
         severidad: 'ALTA',
-        hora: '10:18',
+        hora: '06:18',
         detectadoEn: '2026-07-22T10:18:00.000Z',
       },
       {
@@ -228,7 +228,7 @@ describe('Fibex Play · grilla en vivo (e2e)', () => {
         categoria: 'NOTICIAS',
         tipoIncidencia: 'IMAGEN_CONGELADA',
         severidad: 'ALTA',
-        hora: '10:26',
+        hora: '06:26',
         detectadoEn: '2026-07-22T10:26:00.000Z',
       },
       {
@@ -237,7 +237,7 @@ describe('Fibex Play · grilla en vivo (e2e)', () => {
         categoria: 'PREMIUM',
         tipoIncidencia: 'AUDIO_DESINCRONIZADO',
         severidad: 'MEDIA',
-        hora: '10:39',
+        hora: '06:39',
         detectadoEn: '2026-07-22T10:39:00.000Z',
       },
       {
@@ -246,7 +246,7 @@ describe('Fibex Play · grilla en vivo (e2e)', () => {
         categoria: 'DEPORTES',
         tipoIncidencia: 'SENAL_INTERMITENTE',
         severidad: 'MEDIA',
-        hora: '10:51',
+        hora: '06:51',
         detectadoEn: '2026-07-22T10:51:00.000Z',
       },
     ]);

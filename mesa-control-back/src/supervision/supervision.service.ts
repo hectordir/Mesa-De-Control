@@ -12,6 +12,7 @@ import {
   SupervisionZonaDto,
   ZonaEstado,
 } from './dto/supervision-resumen.dto';
+import { hoyVE } from '../common/time/index';
 
 /*
  * Mapeo del enum `ResultadoGestion` (heurística demo, documentada):
@@ -86,11 +87,9 @@ type Reciente = {
 export class SupervisionService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Día de hoy en hora de Caracas, como `YYYY-MM-DD`. */
   private static hoy(): string {
-    const now = new Date();
-    const mes = String(now.getMonth() + 1).padStart(2, '0');
-    const dia = String(now.getDate()).padStart(2, '0');
-    return `${now.getFullYear()}-${mes}-${dia}`;
+    return hoyVE();
   }
 
   private static medianoche(fecha: string): Date {

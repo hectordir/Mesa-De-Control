@@ -1,4 +1,5 @@
 import type { GestionRow } from '../../../lib/api/types'
+import { mesActualVE } from '../../../lib/tiempoVE'
 import { resultadoPresentation } from './resultado.presentation'
 
 /** Iniciales del avatar del operador (máx. 2), `?` si el nombre está vacío. */
@@ -16,13 +17,28 @@ export function formatFecha(fecha: string): string {
   return `${m[3]}/${m[2]}/${m[1]}`
 }
 
-/** Duración en minutos a texto legible; `—` si es nula. */
-export function formatDuracion(min: number | null): string {
-  if (min === null || min === undefined) return '—'
-  if (min < 60) return `${min} min`
-  const horas = Math.floor(min / 60)
-  const resto = min % 60
-  return `${horas}h ${String(resto).padStart(2, '0')}m`
+/**
+ * Texto de celda: degrada a `—` los valores vacíos.
+ * Aplica a `nombreCliente`/`telefono`, que pueden llegar en `''` en filas
+ * históricas anteriores a la validación obligatoria del POST.
+ */
+export function textoODash(value: string | null | undefined): string {
+  const t = (value ?? '').trim()
+  return t === '' ? '—' : t
+}
+
+/**
+ * Presentación del identificador Fibex del cliente: `1002451` → `LG-1002451`.
+ * Es el ÚNICO punto donde se arma el prefijo; toda la UI (tabla, cards, drawer,
+ * modal y CSV) pasa por aquí para no divergir. Sin abonado no hay prefijo que
+ * poner: degrada al mismo guion que `textoODash` en vez de un `LG-` huérfano.
+ *
+ * Ojo: nada que ver con `GestionRow.codigo` (LG-#### derivado del id de BD),
+ * que sigue sin mostrarse en ninguna parte.
+ */
+export function formatAbonado(abonado: string | null | undefined): string {
+  const t = (abonado ?? '').trim()
+  return t === '' ? textoODash(t) : `LG-${t}`
 }
 
 /** Zebra: se tinta la fila impar (0-indexed). */
@@ -49,16 +65,16 @@ function csvCell(value: string): string {
 }
 
 const CSV_HEADER = [
-  'Codigo',
-  'Operador',
+  // `Abonado` es el identificador del cliente en Fibex: el único id de fila que
+  // se expone al usuario (el `codigo` LG-xxxx derivado del id de BD no se pinta).
   'Abonado',
+  'Operador',
+  'Cliente',
   'Telefono',
   'Zona',
-  'Canal',
   'Resultado',
   'Fecha',
   'Hora',
-  'Duracion',
 ]
 
 /** CSV de las filas visibles: cabecera + una línea por gestión. */
@@ -67,20 +83,35 @@ export function gestionesToCsv(rows: GestionRow[]): string {
   for (const r of rows) {
     lineas.push(
       [
-        r.codigo,
+        formatAbonado(r.abonado),
         r.operador.nombre,
-        r.abonado,
+        r.nombreCliente,
         r.telefono,
         r.zona,
-        r.canal ?? '',
         resultadoPresentation(r.resultado).label,
         formatFecha(r.fecha),
         r.hora,
-        formatDuracion(r.duracionMin),
       ]
         .map(csvCell)
         .join(','),
     )
   }
   return lineas.join('\n')
+}
+
+/**
+ * Rango [primer día, último día] del mes en curso en 'YYYY-MM-DD', calculado
+ * sobre la hora de la operación (Venezuela) y no sobre la del navegador: es el
+ * mismo mes que agrega el backend.
+ */
+export function mesEnCurso(): { desde: string; hasta: string } {
+  const [anio, mes] = mesActualVE().split('-').map(Number)
+  const mm = `${mes}`.padStart(2, '0')
+  // Día 0 del mes siguiente = último del actual; `Date` aquí es sólo una
+  // calculadora de calendario, no un reloj.
+  const ultimo = new Date(anio, mes, 0).getDate()
+  return {
+    desde: `${anio}-${mm}-01`,
+    hasta: `${anio}-${mm}-${`${ultimo}`.padStart(2, '0')}`,
+  }
 }

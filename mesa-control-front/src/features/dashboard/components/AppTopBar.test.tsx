@@ -26,6 +26,22 @@ beforeEach(() => {
 })
 
 describe('AppTopBar', () => {
+  it('no renderiza el grupo de tabs de empresa', () => {
+    renderTopBar()
+    expect(screen.queryByRole('tablist', { name: 'Empresa' })).not.toBeInTheDocument()
+    for (const empresa of ['Mesa de Control', 'Fibex Telecom', 'Soporte-NOC']) {
+      expect(screen.queryByRole('tab', { name: empresa })).not.toBeInTheDocument()
+      expect(screen.queryByText(empresa)).not.toBeInTheDocument()
+    }
+  })
+
+  it('mantiene marca, navegación y cluster de sesión a la derecha', () => {
+    renderTopBar()
+    expect(screen.getByText('Fibex Control')).toBeInTheDocument()
+    expect(screen.getByRole('navigation', { name: 'Secciones' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'Dashboard' })).toBeInTheDocument()
+  })
+
   it('el item Fibex Play enlaza a /fibex-play', () => {
     renderTopBar()
     const enlace = screen.getByRole('link', { name: 'Fibex Play' })

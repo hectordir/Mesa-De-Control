@@ -17,12 +17,18 @@ interface ListBody {
     id: string;
     codigo: string;
     operador: { id: string; nombre: string; iniciales: string };
+    abonado: string;
+    nombreCliente: string;
+    telefono: string;
     zona: string;
     canal: string | null;
     resultado: string;
     fecha: string;
     hora: string;
     duracionMin: number | null;
+    modificadaFecha: string | null;
+    modificadaHora: string | null;
+    editor: { id: string; nombre: string } | null;
   }>;
   total: number;
   page: number;
@@ -55,12 +61,15 @@ const fila = () => ({
   fecha: new Date('2026-07-17T00:00:00.000Z'),
   createdAt: new Date('2026-07-17T14:42:00.000Z'),
   abonado: 'Cond. Los Robles',
+  nombreCliente: 'María Pérez',
   telefono: '0412-118-4420',
   detalle: 'Corte total de fibra',
   solucion: 'Ticket generado a NOC',
   canal: 'TELEGRAM',
   duracion: 12,
   operador: { id: 'op-1', name: 'Jhon Rivas' },
+  updatedAt: new Date('2026-07-18T11:47:00.000Z'),
+  editor: { id: 'u-9', name: 'Ana Suárez' },
 });
 
 const findMany = jest.fn((args: { skip: number }) =>
@@ -121,14 +130,23 @@ describe('Historial · GET /gestiones (e2e)', () => {
     expect(body.items[0]).toMatchObject({
       id: 'g-1',
       operador: { id: 'op-1', nombre: 'Jhon Rivas', iniciales: 'JR' },
+      abonado: 'Cond. Los Robles',
+      nombreCliente: 'María Pérez',
+      telefono: '0412-118-4420',
       zona: 'Norte',
       canal: 'TELEGRAM',
       resultado: 'SOLUCIONADO_MESA',
+      // `fecha` es `@db.Date`: día calendario puro, no se convierte de zona.
       fecha: '2026-07-17',
-      hora: '14:42',
+      // `createdAt` 14:42 UTC = 10:42 en Caracas.
+      hora: '10:42',
       duracionMin: 12,
+      // `updatedAt` 11:47 UTC = 7:47 a. m. en Caracas (mismo día).
+      modificadaFecha: '18/07/2026',
+      modificadaHora: '7:47 a. m.',
+      editor: { id: 'u-9', nombre: 'Ana Suárez' },
     });
-    expect(body.items[0].codigo).toMatch(/^GST-\d{5}$/);
+    expect(body.items[0].codigo).toMatch(/^LG-\d{5}$/);
 
     expect(body.counts.total).toBe(TOTAL);
     expect(Object.keys(body.counts.porResultado).sort()).toEqual([
@@ -153,5 +171,21 @@ describe('Historial · GET /gestiones (e2e)', () => {
 
   it('400 con sortKey inválido', async () => {
     await get('?sortKey=inventado').expect(400);
+  });
+
+  it('200 con sortKey=nombreCliente: ordena por nombreCliente en Postgres', async () => {
+    findMany.mockClear();
+    await get('?sortKey=nombreCliente&sortDir=asc').expect(200);
+    const args = (findMany.mock.calls[0] as [Record<string, unknown>])[0];
+    expect(args.orderBy).toEqual([{ nombreCliente: 'asc' }, { id: 'asc' }]);
+  });
+
+  it('search también busca por nombre de cliente', async () => {
+    findMany.mockClear();
+    await get('?search=maria').expect(200);
+    const args = (findMany.mock.calls[0] as [Record<string, unknown>])[0];
+    expect((args.where as { OR: unknown[] }).OR).toContainEqual({
+      nombreCliente: { contains: 'maria', mode: 'insensitive' },
+    });
   });
 });

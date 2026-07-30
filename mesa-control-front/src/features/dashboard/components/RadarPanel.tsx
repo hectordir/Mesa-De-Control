@@ -35,11 +35,17 @@ export function RadarPanel({ actividad, estado }: RadarPanelProps) {
       accion={<EnVivo />}
     >
       {estado === 'data' ? (
-        <ul className="px-4 pb-4 pt-2">
-          {actividad.map((item) => (
-            <RadarItem key={item.id} actividad={item} />
-          ))}
-        </ul>
+        // Alto clavado a las 5 barras de "Top 5 Averías" (~258px), su vecino de
+        // fila: el tope evita que el radar se descuelgue (el quinto item queda
+        // cortado, pista de que la lista tiene scroll propio) y el mínimo evita
+        // que encoja con listas cortas.
+        <div className="am-scroll max-h-[260px] min-h-[260px] overflow-y-auto [scrollbar-gutter:stable]">
+          <ul className="px-4 pb-4 pt-2">
+            {actividad.map((item) => (
+              <RadarItem key={item.id} actividad={item} />
+            ))}
+          </ul>
+        </div>
       ) : null}
 
       {estado === 'empty' ? (

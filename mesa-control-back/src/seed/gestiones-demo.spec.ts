@@ -1,10 +1,27 @@
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
+
 import {
+  abonadoPorIndice,
+  atencionPorIndice,
   construirGestionesDemo,
+  DETALLES,
   entrelazar,
   GestionDemo,
   MOTIVOS,
+  nombreClientePorIndice,
+  OBSERVACIONES,
   OperadorDemo,
+  SOLUCIONES,
+  telefonoPorIndice,
+  TIPOS,
 } from './gestiones-demo';
+
+/** Formato venezolano `04XX-XXX-XXXX` con los 5 prefijos móviles vigentes. */
+const TELEFONO_RE = /^04(12|14|16|24|26)-\d{3}-\d{4}$/;
+
+/** Identificador de abonado en Fibex: numérico de 7 dígitos. */
+const ABONADO_RE = /^\d{7}$/;
 
 const FECHA = '2026-07-22';
 
@@ -137,6 +154,61 @@ describe('construirGestionesDemo', () => {
     expect(gestiones[0].id).toBe(`seed-${FECHA}-0000`);
   });
 
+  it('puebla nombreCliente con nombres plausibles y deterministas', () => {
+    for (const g of gestiones) {
+      expect(g.nombreCliente.length).toBeGreaterThan(0);
+      expect(g.nombreCliente.length).toBeLessThanOrEqual(120);
+      // Nombre y apellido, sin dígitos.
+      expect(g.nombreCliente).toMatch(/^\S+ \S+$/u);
+    }
+    // Variedad: no todas las gestiones del día son el mismo cliente.
+    expect(new Set(gestiones.map((g) => g.nombreCliente)).size).toBeGreaterThan(
+      10,
+    );
+    expect(nombreClientePorIndice(7)).toBe(nombreClientePorIndice(7));
+  });
+
+  it('puebla telefono con formato 04XX-XXX-XXXX determinista', () => {
+    for (const g of gestiones) expect(g.telefono).toMatch(TELEFONO_RE);
+    // Variedad: no todas las gestiones del día comparten teléfono.
+    expect(new Set(gestiones.map((g) => g.telefono)).size).toBeGreaterThan(10);
+    // Determinista: misma posición, mismo número (idempotencia del seed).
+    expect(telefonoPorIndice(7)).toBe(telefonoPorIndice(7));
+    expect(telefonoPorIndice(7)).not.toBe(telefonoPorIndice(8));
+    // Los 5 prefijos móviles aparecen en la jornada.
+    expect(new Set(gestiones.map((g) => g.telefono.slice(0, 4))).size).toBe(5);
+  });
+
+  it('puebla abonado con el identificador Fibex, nunca con la zona', () => {
+    for (const g of gestiones) {
+      expect(g.abonado).toMatch(ABONADO_RE);
+      // Regresión: el seed escribía la zona (`Cond. Los Robles · Casa 07`).
+      expect(g.abonado).not.toContain(g.ubicacion);
+    }
+    // Un identificador distinto por gestión del día.
+    expect(new Set(gestiones.map((g) => g.abonado)).size).toBe(
+      gestiones.length,
+    );
+  });
+
+  it('puebla detalle, solucion y tipo con valores del catálogo del front', () => {
+    for (const g of gestiones) {
+      expect(DETALLES).toContain(g.detalle);
+      expect(SOLUCIONES).toContain(g.solucion);
+      expect(TIPOS).toContain(g.tipo);
+      expect(g.observacion.length).toBeGreaterThan(0);
+    }
+    // Variedad: los tres catálogos aparecen completos en una jornada de 342.
+    expect(new Set(gestiones.map((g) => g.detalle)).size).toBe(DETALLES.length);
+    expect(new Set(gestiones.map((g) => g.solucion)).size).toBe(
+      SOLUCIONES.length,
+    );
+    expect(new Set(gestiones.map((g) => g.tipo)).size).toBe(TIPOS.length);
+    expect(new Set(gestiones.map((g) => g.observacion)).size).toBe(
+      OBSERVACIONES.length,
+    );
+  });
+
   it('puebla canal y duracion de forma determinista y plausible', () => {
     const canales = new Set(gestiones.map((g) => g.canal));
 
@@ -147,5 +219,71 @@ describe('construirGestionesDemo', () => {
       expect(g.duracion).toBeLessThanOrEqual(30);
       expect(Number.isInteger(g.duracion)).toBe(true);
     }
+  });
+});
+
+describe('abonadoPorIndice', () => {
+  it('genera identificadores Fibex de 7 dígitos', () => {
+    for (const i of [0, 1, 7, 341, 1000, 8768]) {
+      expect(abonadoPorIndice(i)).toMatch(ABONADO_RE);
+    }
+  });
+
+  it('es determinista: misma posición, mismo identificador', () => {
+    expect(abonadoPorIndice(7)).toBe(abonadoPorIndice(7));
+    expect(abonadoPorIndice(7)).not.toBe(abonadoPorIndice(8));
+  });
+
+  it('no repite identificador en un rango amplio de índices', () => {
+    const ids = Array.from({ length: 10_000 }, (_, i) => abonadoPorIndice(i));
+    expect(new Set(ids).size).toBe(ids.length);
+  });
+});
+
+describe('atencionPorIndice', () => {
+  it('devuelve siempre valores de los catálogos y observación no vacía', () => {
+    for (let i = 0; i < 200; i += 1) {
+      const a = atencionPorIndice(i);
+      expect(DETALLES).toContain(a.detalle);
+      expect(SOLUCIONES).toContain(a.solucion);
+      expect(TIPOS).toContain(a.tipo);
+      expect(OBSERVACIONES).toContain(a.observacion);
+    }
+  });
+
+  it('es determinista y varía la combinación con el índice', () => {
+    expect(atencionPorIndice(3)).toEqual(atencionPorIndice(3));
+    expect(atencionPorIndice(3)).not.toEqual(atencionPorIndice(4));
+  });
+});
+
+/**
+ * Los selects del front son cerrados: si el seed escribe un valor fuera de su
+ * catálogo, el modal de edición lo muestra en blanco. Este test lee el catálogo
+ * real del front (no una copia) para que la divergencia salga en rojo aquí.
+ */
+describe('catálogos del seed vs. catálogos del front', () => {
+  const fuente = readFileSync(
+    join(
+      __dirname,
+      '../../../mesa-control-front/src/features/registro/opciones.ts',
+    ),
+    'utf8',
+  );
+
+  const catalogoFront = (nombre: string): string[] => {
+    const bloque = new RegExp(`${nombre} = texto\\(\\[([\\s\\S]*?)\\]\\)`).exec(
+      fuente,
+    );
+    expect(bloque).not.toBeNull();
+    return [...bloque![1].matchAll(/'([^']*)'/g)].map((m) => m[1]);
+  };
+
+  it.each([
+    ['DETALLE_OPCIONES', DETALLES],
+    ['SOLUCION_OPCIONES', SOLUCIONES],
+    ['TIPO_OPCIONES', TIPOS],
+  ])('%s coincide exactamente con el catálogo del seed', (nombre, seed) => {
+    expect(catalogoFront(nombre)).toEqual([...(seed as string[])]);
   });
 });

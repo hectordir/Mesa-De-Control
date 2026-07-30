@@ -1,6 +1,7 @@
 import { Badge } from '../../../components/ui'
 import { cx } from '../../../components/ui/cx'
 import type { FibexPlayKpis, FallaCanal } from '../../../lib/api/types'
+import { fechaLargaVE, horaVE } from '../../../lib/tiempoVE'
 import { Panel } from '../../dashboard/components/PanelStates'
 import {
   CATEGORIA_LABEL,
@@ -17,22 +18,12 @@ interface NovedadesPanelProps {
   actualizadoEn: string
 }
 
-/** HH:mm del instante, con la zona del navegador; vacío si no es una fecha. */
+/**
+ * HH:mm del instante en la hora de la operación (America/Caracas), nunca en la
+ * del navegador; `—` si no es una fecha válida.
+ */
 function horaSondeo(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return '—'
-  return d.toLocaleTimeString('es', { hour: '2-digit', minute: '2-digit' })
-}
-
-/** Fecha larga (día de la semana + fecha) del instante. */
-function fechaLarga(iso: string): string {
-  const d = new Date(iso)
-  if (Number.isNaN(d.getTime())) return ''
-  return d.toLocaleDateString('es', {
-    weekday: 'long',
-    day: 'numeric',
-    month: 'long',
-  })
+  return horaVE(iso) || '—'
 }
 
 /** Timeline de incidencias en vivo, o panel de éxito con la grilla operativa. */
@@ -45,7 +36,7 @@ export function NovedadesPanel({
   return (
     <Panel
       titulo="Reporte de Novedades"
-      subtitulo={fechaLarga(actualizadoEn)}
+      subtitulo={fechaLargaVE(actualizadoEn)}
       estado="data"
       accion={
         <span className="inline-flex items-center gap-[6px] text-caption font-medium text-text-secondary">

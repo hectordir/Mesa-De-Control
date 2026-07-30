@@ -8,7 +8,8 @@ import type {
   SortDir,
 } from '../../lib/api/types'
 import { useHistorial } from './hooks/useHistorial'
-import { gestionesToCsv } from './lib/historial.presentation'
+import { gestionesToCsv, mesEnCurso } from './lib/historial.presentation'
+import { EditarGestionModal } from './components/EditarGestionModal'
 import { GestionDrawer } from './components/GestionDrawer'
 import { HistorialCards } from './components/HistorialCards'
 import { HistorialEmpty } from './components/HistorialEmpty'
@@ -28,19 +29,6 @@ function useDebounced<T>(value: T, delay = 300): T {
     return () => clearTimeout(id)
   }, [value, delay])
   return debounced
-}
-
-/** Rango [primer día, último día] del mes en curso, en 'YYYY-MM-DD'. */
-function mesEnCurso(): { desde: string; hasta: string } {
-  const hoy = new Date()
-  const y = hoy.getFullYear()
-  const m = hoy.getMonth()
-  const mm = String(m + 1).padStart(2, '0')
-  const ultimo = new Date(y, m + 1, 0).getDate()
-  return {
-    desde: `${y}-${mm}-01`,
-    hasta: `${y}-${mm}-${String(ultimo).padStart(2, '0')}`,
-  }
 }
 
 /** Descarga en cliente un CSV con las filas visibles (sin librerías). */
@@ -67,6 +55,7 @@ export default function HistorialPage() {
   const [sortDir, setSortDir] = useState<SortDir>('desc')
   const [page, setPage] = useState(1)
   const [seleccion, setSeleccion] = useState<GestionRow | null>(null)
+  const [editando, setEditando] = useState<string | null>(null)
 
   const searchDebounced = useDebounced(search)
 
@@ -184,7 +173,19 @@ export default function HistorialPage() {
         </>
       )}
 
-      <GestionDrawer gestion={seleccion} onClose={() => setSeleccion(null)} />
+      <GestionDrawer
+        gestion={seleccion}
+        onClose={() => setSeleccion(null)}
+        onEditar={(g) => {
+          setSeleccion(null)
+          setEditando(g.id)
+        }}
+      />
+
+      <EditarGestionModal
+        gestionId={editando}
+        onClose={() => setEditando(null)}
+      />
     </div>
   )
 }

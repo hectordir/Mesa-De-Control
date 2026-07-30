@@ -1,4 +1,10 @@
-import { MOTIVOS } from './gestiones-demo';
+import {
+  DETALLES,
+  MOTIVOS,
+  OBSERVACIONES,
+  SOLUCIONES,
+  TIPOS,
+} from './gestiones-demo';
 import {
   construirGestionesMensuales,
   construirMesDemo,
@@ -7,6 +13,7 @@ import {
   MOTIVOS_HEATMAP,
   ZONAS,
 } from './gestiones-mensuales';
+import { sinHoraLocal } from '../common/time/sin-hora-local';
 
 const OPERADORES = ['op-jhon', 'op-maria', 'op-carlos', 'op-ana', 'op-luis'];
 
@@ -28,6 +35,18 @@ describe('mesesAnalisis', () => {
       '2026-06',
       '2026-07',
     ]);
+  });
+
+  // El "mes en curso" del seed debe ser el de Caracas, o no coincidiría con el
+  // periodo que consulta el Análisis Mensual.
+  it('usa el mes/día de Caracas, sin la hora local del proceso', async () => {
+    // 02:00 UTC del 1/8 son las 22:00 del 31/7 en Caracas.
+    const meses = await sinHoraLocal(() =>
+      mesesAnalisis(new Date('2026-08-01T02:00:00.000Z')),
+    );
+    const enCurso = meses[meses.length - 1];
+    expect(enCurso.periodo).toBe('2026-07');
+    expect(enCurso.diaMaximo).toBe(30);
   });
 
   it('cruza el año hacia atrás sin fechas fijas', () => {
@@ -280,5 +299,45 @@ describe('construirGestionesMensuales', () => {
         (g) => g.fecha.toISOString().slice(0, 10) === '2026-07-22',
       ),
     ).toBe(false);
+  });
+
+  it('pobla nombreCliente en todas las gestiones del mes', () => {
+    const gestiones = construirGestionesMensuales(
+      new Date('2026-07-22T10:00:00.000Z'),
+      OPERADORES,
+    );
+    for (const g of gestiones) {
+      expect(g.nombreCliente).toMatch(/^\S+ \S+$/u);
+      expect(g.nombreCliente.length).toBeLessThanOrEqual(120);
+    }
+    expect(new Set(gestiones.map((g) => g.nombreCliente)).size).toBeGreaterThan(
+      5,
+    );
+  });
+
+  it('pobla telefono en todas las gestiones del mes', () => {
+    const gestiones = construirGestionesMensuales(
+      new Date('2026-07-22T10:00:00.000Z'),
+      OPERADORES,
+    );
+    for (const g of gestiones) {
+      expect(g.telefono).toMatch(/^04(12|14|16|24|26)-\d{3}-\d{4}$/);
+    }
+    expect(new Set(gestiones.map((g) => g.telefono)).size).toBeGreaterThan(5);
+  });
+
+  it('pobla abonado, detalle, solucion, tipo y observacion del mes', () => {
+    const gestiones = construirGestionesMensuales(
+      new Date('2026-07-22T10:00:00.000Z'),
+      OPERADORES,
+    );
+    for (const g of gestiones) {
+      expect(g.abonado).toMatch(/^\d{7}$/);
+      expect(g.abonado).not.toContain(g.ubicacion);
+      expect(DETALLES).toContain(g.detalle);
+      expect(SOLUCIONES).toContain(g.solucion);
+      expect(TIPOS).toContain(g.tipo);
+      expect(OBSERVACIONES).toContain(g.observacion);
+    }
   });
 });
