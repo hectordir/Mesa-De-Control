@@ -70,3 +70,6 @@ Comandos de referencia:
 - Front: `cd mesa-control-front && npm run dev | npm run build | npm run lint`
   (Vitest/Playwright se añaden al homologar el stack).
 - Back: `cd mesa-control-back && npm run start:dev | npm test | npm run test:e2e | npm run lint`.
+
+Los pantallazos de verificación visual con Playwright se guardan en `playwright-mpc-png/`
+(ignorada por git, junto con `.playwright-mcp/`). No dejes imágenes en la raíz del repo.

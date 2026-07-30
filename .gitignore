@@ -1,0 +1,5 @@
+# Artefactos de sesiones de Playwright MCP (logs, snapshots, trazas)
+.playwright-mcp/
+
+# Pantallazos tomados con Playwright durante la verificación visual
+playwright-mpc-png/
