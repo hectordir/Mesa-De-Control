@@ -9,6 +9,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { FibexPlayModule } from './fibex-play/fibex-play.module';
 import { GestionAppModule } from './fibex-play/gestion/gestion-app.module';
 import { GestionModule } from './gestion/gestion.module';
+import { HealthModule } from './health/health.module';
 import { OperadoresModule } from './operadores/operadores.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { SupervisionModule } from './supervision/supervision.module';
@@ -22,6 +23,7 @@ import { SupervisionModule } from './supervision/supervision.module';
     FibexPlayModule,
     GestionAppModule,
     GestionModule,
+    HealthModule,
     OperadoresModule,
     SupervisionModule,
   ],

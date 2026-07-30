@@ -1,0 +1,11 @@
+{
+  // ts-node ejecuta los scripts sueltos (prisma/bootstrap-admin.ts) en CommonJS.
+  // Se usa un tsconfig en vez de --compilerOptions inline porque el JSON del flag
+  // pierde las comillas al pasar por sh/cmd desde un script de npm.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "noEmit": true
+  }
+}
