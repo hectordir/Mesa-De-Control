@@ -1,7 +1,8 @@
 # Spec: Preparar el frontend para deploy en Vercel
 
 - **Slug:** `deploy-front-vercel`
-- **Estado:** **Aprobado (2026-07-30)** · En progreso
+- **Estado:** Aprobado (2026-07-30) · **Completado y verificado en producción (2026-07-30)**
+- **Producción:** front `https://mesa-control-front.vercel.app` → API `https://mesa-de-control.up.railway.app`
 - **Dominio(s):** frontend
 - **Ticket(s) derivados:** front: `frontend-dev` (todo este spec)
 - **Relacionado:** [`deploy-back-railway.md`](deploy-back-railway.md) (completado; back vivo en
@@ -53,10 +54,11 @@ Contexto que motiva el ticket:
 El orden de routing de Vercel es `redirects` → **filesystem** → `rewrites`. Por eso el catch-all es
 seguro: los assets reales se sirven antes de que el rewrite entre en juego.
 
-> **Verificación diferida (decisión humana, 2026-07-30):** se descartó confirmar el esquema con
-> context7. La comprobación se hace en el primer deploy: entrar directo a `/dashboard` debe cargar
-> la SPA (no 404) y `/assets/index-*.js` debe servirse como JavaScript, no como HTML. Si la app
-> carga en blanco, el rewrite está tragándose los assets y hay que revisar este fichero.
+> **Verificación diferida → CONFIRMADA en producción (2026-07-30).** Se descartó context7 y se
+> comprobó contra el deploy real en `https://mesa-control-front.vercel.app`:
+> `/` → 200 `text/html`; `/dashboard` (deep link directo) → **200 `text/html`, no 404** → el rewrite
+> funciona; `/assets/index-*.js` → 200 `application/javascript` → el catch-all **no** intercepta los
+> assets, el filesystem tiene prioridad. El esquema era correcto.
 
 ```ts
 // src/lib/api/client.ts — contrato de resolución de la base del API
