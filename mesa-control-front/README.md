@@ -1,75 +1,67 @@
-# React + TypeScript + Vite
+# mesa-control-front
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Frontend de **Mesa de Control**: React 19 · Vite · TypeScript · React Router (SPA, sin SSR) ·
+Tailwind CSS v3 · React Query · Zustand · Axios. Tests con Vitest + React Testing Library
+(unit/componente) y Playwright (e2e, en `e2e/`).
 
-Currently, two official plugins are available:
+## Desarrollo
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
-
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
-
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
-
+```bash
+npm install
+cp .env.example .env      # ajusta VITE_API_URL si el back no está en localhost:3000
+npm run dev               # servidor de desarrollo
+npm run build             # tsc -b && vite build  → dist/
+npm run lint
+npm test                  # vitest run
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## Variables de entorno
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+| Variable       | Ejemplo                                   | Notas                              |
+| -------------- | ----------------------------------------- | ---------------------------------- |
+| `VITE_API_URL` | `https://mesa-de-control.up.railway.app`  | URL base del API. Sin barra final. |
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+Reglas de las variables `VITE_*` (Vite):
 
+- **Son de BUILD, no de runtime.** Vite las sustituye literalmente en el bundle durante
+  `vite build`. **Cambiarlas en el panel de Vercel no surte efecto hasta un nuevo deploy**
+  (Redeploy sin caché).
+- **Son públicas.** Acaban en el JavaScript que descarga el navegador: cualquiera puede leerlas.
+  **Nunca metas secretos** (claves de API privadas, credenciales de BD) en una `VITE_*`.
+- Si `VITE_API_URL` queda vacía o con solo espacios, el cliente cae al default de desarrollo
+  `http://localhost:3000` en vez de dejar la base vacía (ver `src/lib/api/client.ts`).
+  La barra final se recorta, así que `https://api.com/` y `https://api.com` son equivalentes.
+
+## Deploy en Vercel
+
+El proyecto se importa desde el dashboard de Vercel (no se usa la CLI). Ajustes del proyecto:
+
+| Ajuste                | Valor                                    |
+| --------------------- | ---------------------------------------- |
+| Root Directory        | `mesa-control-front`                     |
+| Framework Preset      | Vite                                     |
+| Build Command         | `npm run build` (`tsc -b && vite build`) |
+| Output Directory      | `dist`                                   |
+| Install Command       | `npm install` (por defecto)              |
+| Production Branch     | `main`                                   |
+| Environment Variable  | `VITE_API_URL = https://mesa-de-control.up.railway.app` |
+
+### Fallback de rutas (SPA)
+
+`vercel.json` declara un rewrite catch-all:
+
+```json
+{ "rewrites": [{ "source": "/(.*)", "destination": "/index.html" }] }
 ```
+
+El router usa `createBrowserRouter` (history API real), así que en un hosting estático
+`GET /dashboard` buscaría un fichero inexistente: sin el rewrite, **recargar (F5) en cualquier
+ruta interna daría 404** aunque la navegación por clics funcione. El orden de routing de Vercel es
+`redirects` → **filesystem** → `rewrites`, por lo que los assets reales (`/assets/*.js`,
+`/assets/*.css`, ficheros de `public/`) se sirven antes de que el catch-all entre en juego.
+`vercel.config.test.ts` vigila que ese fichero no desaparezca.
+
+### Después del primer deploy
+
+Añadir la URL de Vercel a `CORS_ORIGIN` en Railway (backend), o el navegador bloqueará las
+llamadas al API.

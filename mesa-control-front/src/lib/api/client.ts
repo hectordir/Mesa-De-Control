@@ -1,9 +1,25 @@
 import axios, { type InternalAxiosRequestConfig } from 'axios'
 import { useAuthStore } from '../../stores/auth.store'
 
+const DEFAULT_API_URL = 'http://localhost:3000'
+
+/**
+ * `VITE_API_URL` se inyecta en tiempo de BUILD. Una variable declarada pero
+ * vacía (fácil de dejar así en el panel de Vercel) dejaría `baseURL = ''` y las
+ * peticiones irían al dominio del front; por eso se recorta y se valida en vez
+ * de usar solo `??`. La barra final se elimina para no depender de que el
+ * cliente HTTP normalice `baseURL + url`.
+ */
+function resolveApiBaseUrl(raw: string | undefined): string {
+  const value = (raw ?? '').trim()
+  if (!value) return DEFAULT_API_URL
+  return value.replace(/\/+$/, '')
+}
+
 /** URL del API; siempre por entorno, nunca hardcodeada en los componentes. */
-export const API_BASE_URL: string =
-  import.meta.env.VITE_API_URL ?? 'http://localhost:3000'
+export const API_BASE_URL: string = resolveApiBaseUrl(
+  import.meta.env.VITE_API_URL,
+)
 
 export const api = axios.create({
   baseURL: API_BASE_URL,
