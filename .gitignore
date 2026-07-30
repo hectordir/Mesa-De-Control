@@ -2,4 +2,4 @@
 .playwright-mcp/
 
 # Pantallazos tomados con Playwright durante la verificación visual
-playwright-mpc-png/
+.playwright-mcp-png/
