@@ -65,3 +65,18 @@ ruta interna daría 404** aunque la navegación por clics funcione. El orden de 
 
 Añadir la URL de Vercel a `CORS_ORIGIN` en Railway (backend), o el navegador bloqueará las
 llamadas al API.
+
+### Web Analytics
+
+La app monta **Vercel Web Analytics** (`@vercel/analytics`) una sola vez en la raíz
+(`src/App.tsx`), por encima del router, de modo que cubre todas las rutas y registra los cambios
+de ruta del SPA sin recargar la página.
+
+- **Hay que habilitarlo en el dashboard de Vercel** (proyecto → pestaña **Analytics** → **Enable**)
+  para que empiece a reportar. Sin ese paso la app funciona igual, simplemente no hay datos.
+- **En local no envía datos**: fuera del deploy de Vercel el paquete corre en modo desarrollo y no
+  reporta nada al servidor. Tampoco en los tests (jsdom).
+- Los eventos van a la infraestructura de Vercel, nunca al backend de Railway: no hay que tocar
+  `CORS_ORIGIN`.
+- Un bloqueador de anuncios puede impedir que cargue el script; el analytics es opcional y la app
+  sigue funcionando con normalidad.
